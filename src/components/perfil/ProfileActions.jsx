@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { 
 	Edit, 
 	Key, 
 	Download, 
-	Settings, 
 	LogOut, 
 	Mail,
-	FileText
+	Shield
 } from "lucide-react";
 
 const ActionCard = ({ icon: Icon, title, description, onClick, color, delay, disabled = false }) => (
@@ -35,7 +35,9 @@ const ActionCard = ({ icon: Icon, title, description, onClick, color, delay, dis
 	</motion.div>
 );
 
-const ProfileActions = ({ user, onEditProfile, onChangePassword, onDownloadData }) => {
+const ProfileActions = ({ user, onEditProfile, onDownloadData }) => {
+	const navigate = useNavigate();
+
 	if (!user) return null;
 
 	const handleEditProfile = () => {
@@ -43,7 +45,7 @@ const ProfileActions = ({ user, onEditProfile, onChangePassword, onDownloadData 
 	};
 
 	const handleChangePassword = () => {
-		onChangePassword?.();
+		navigate("/cambiar-contrasena");
 	};
 
 	const handleDownloadData = () => {
@@ -88,10 +90,15 @@ const ProfileActions = ({ user, onEditProfile, onChangePassword, onDownloadData 
 
 	const handleLogout = () => {
 		if (window.confirm('¿Estás seguro de que deseas cerrar sesión?')) {
-			localStorage.removeItem('userId');
-			localStorage.removeItem('userToken');
-			// Redirigir al login o página principal
-			window.location.href = '/login';
+			// Limpiar localStorage
+			localStorage.removeItem("isAuthenticated");
+			localStorage.removeItem("usuario");
+			localStorage.removeItem("usuarioId");
+			localStorage.removeItem("pendingUserId");
+			localStorage.removeItem("userEmail");
+			
+			// Redirigir al login
+			navigate('/login');
 		}
 	};
 

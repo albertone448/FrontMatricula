@@ -12,6 +12,7 @@ import HorariosPage from "./pages/HorariosPage";
 import InscripcionesPage from "./pages/InscripcionesPage";
 import UsuariosPage from "./pages/UsuariosPage";
 import PerfilPage from "./pages/PerfilPage";
+import ChangePasswordPage from "./pages/auth/ChangePasswordPage";
 import PlantillasPage from "./pages/PlantillasPage";
 
 // Páginas de autenticación (públicas)
@@ -59,6 +60,7 @@ function App() {
 									<Route path='/inscripciones' element={<InscripcionesPage />} />
 									<Route path='/usuarios' element={<UsuariosPage />} />
 									<Route path='/perfil' element={<PerfilPage />} />
+									<Route path='/cambiar-contrasena' element={<ChangePasswordPage />} />
 									<Route path='/plantillas' element={<PlantillasPage />} />
 									{/* Ruta por defecto para rutas no encontradas */}
 									<Route path='*' element={<Navigate to="/" replace />} />
