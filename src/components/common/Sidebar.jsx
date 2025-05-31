@@ -13,12 +13,6 @@ const SIDEBAR_ITEMS = [
   { name: "Plantillas", icon: PencilRuler, color: "#6EE7B7", href: "/plantillas" },
 ];
 
-const PROFILE_ITEM = {
-  name: "Perfil",
-  icon: User,
-  color: "#3B82F6",
-  href: "/perfil",
-};
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -64,28 +58,6 @@ const Sidebar = () => {
             </Link>
           ))}
         </nav>
-
-        {/* Perfil fijo abajo */}
-        <div className="mt-auto">
-          <Link to={PROFILE_ITEM.href}>
-            <motion.div className="flex items-center p-4 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors">
-              <PROFILE_ITEM.icon size={20} style={{ color: PROFILE_ITEM.color, minWidth: "20px" }} />
-              <AnimatePresence>
-                {isSidebarOpen && (
-                  <motion.span
-                    className="ml-4 whitespace-nowrap"
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: "auto" }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2, delay: 0.3 }}
-                  >
-                    {PROFILE_ITEM.name}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          </Link>
-        </div>
       </div>
     </motion.div>
   );
