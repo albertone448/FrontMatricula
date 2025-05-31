@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "../components/common/Header";
 import { useProfile } from "../hooks/useProfile";
@@ -7,8 +8,20 @@ import ProfileStats from "../components/perfil/ProfileStats";
 import ProfileActions from "../components/perfil/ProfileActions";
 
 const PerfilPage = () => {
+	const location = useLocation();
 	const { user, loading, error, fetchProfile, updateProfile } = useProfile();
 	const [successMessage, setSuccessMessage] = useState("");
+
+	// Verificar si viene mensaje de éxito desde cambio de contraseña
+	useEffect(() => {
+		if (location.state?.message) {
+			setSuccessMessage(location.state.message);
+			setTimeout(() => setSuccessMessage(''), 5000);
+			
+			// Limpiar el state para que no se muestre de nuevo al recargar
+			window.history.replaceState({}, document.title);
+		}
+	}, [location.state]);
 
 	const handleRefresh = useCallback(() => {
 		fetchProfile();
@@ -17,11 +30,6 @@ const PerfilPage = () => {
 	const handleEditProfile = useCallback(() => {
 		// Aquí puedes abrir un modal de edición o navegar a otra página
 		alert('Modal de edición - Por implementar');
-	}, []);
-
-	const handleChangePassword = useCallback(() => {
-		// Aquí puedes abrir un modal de cambio de contraseña
-		alert('Modal de cambio de contraseña - Por implementar');
 	}, []);
 
 	const handleDownloadData = useCallback(() => {
@@ -102,7 +110,6 @@ const PerfilPage = () => {
 						<ProfileActions
 							user={user}
 							onEditProfile={handleEditProfile}
-							onChangePassword={handleChangePassword}
 							onDownloadData={handleDownloadData}
 						/>
 					)}

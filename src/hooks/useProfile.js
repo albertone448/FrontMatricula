@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { authUtils } from '../utils/authUtils';
 
 export const useProfile = () => {
 	const [user, setUser] = useState(null);
@@ -11,8 +12,8 @@ export const useProfile = () => {
 		setError("");
 		
 		try {
-			// Obtener ID del localStorage
-			const userId = localStorage.getItem('usuarioId');
+			// Obtener ID del localStorage usando authUtils
+			const userId = authUtils.getUserId();
 			
 			if (!userId) {
 				throw new Error('No se encontró el ID del usuario en el almacenamiento local');
@@ -42,7 +43,7 @@ export const useProfile = () => {
 	// Actualizar perfil del usuario
 	const updateProfile = useCallback(async (updatedData) => {
 		try {
-			const userId = localStorage.getItem('userId');
+			const userId = authUtils.getUserId();
 			
 			if (!userId) {
 				throw new Error('No se encontró el ID del usuario');
