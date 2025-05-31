@@ -10,37 +10,227 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 		identificacion: "",
 		rol: "Estudiante",
 		carrera: "",
-		correo: "",
-		contrasena: ""
+		correo: ""
 	});
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
 	const roles = ["Estudiante", "Profesor", "Administrador"];
 	const carreras = [
+		// FACULTAD DE CIENCIAS EXACTAS Y NATURALES
+		"Química",
+		"Matemática",
+		"Física",
+		"Biología",
+		"Ciencias Actuariales",
 		"Ingeniería Informática",
-		"Ingeniería Industrial",
-		"Ingeniería Civil",
-		"Administración de Empresas",
-		"Contaduría Pública",
-		"Derecho",
+		"Tecnologías de Información",
+		
+		// FACULTAD DE CIENCIAS SOCIALES
+		"Sociología",
 		"Psicología",
-		"Medicina"
+		"Trabajo Social",
+		"Planificación Económica y Social",
+		"Administración",
+		"Economía",
+		"Relaciones Internacionales",
+		"Ciencias Políticas",
+		"Gestión de Recursos Humanos",
+		"Bibliotecología y Documentación",
+		"Archivística",
+		
+		// FACULTAD DE FILOSOFÍA Y LETRAS
+		"Filosofía",
+		"Historia",
+		"Literatura y Lingüística",
+		"Inglés",
+		"Francés",
+		"Traducción Inglés-Español",
+		"Traducción Francés-Español",
+		"Comunicación",
+		"Producción Audiovisual",
+		"Ciencias Geográficas",
+		"Antropología",
+		"Arte",
+		"Música",
+		"Danza",
+		"Teatro",
+		
+		// FACULTAD DE CIENCIAS DE LA SALUD
+		"Medicina Veterinaria",
+		"Medicina",
+		"Enfermería",
+		"Salud Ocupacional",
+		"Nutrición Humana",
+		"Promoción de la Salud",
+		"Ciencias del Deporte",
+		"Terapia Física",
+		"Tecnologías en Salud",
+		
+		// FACULTAD DE CIENCIAS DE LA TIERRA Y EL MAR
+		"Ingeniería en Ciencias Forestales",
+		"Ciencias Forestales",
+		"Ingeniería Agronómica",
+		"Ciencias Agrarias",
+		"Medicina Veterinaria",
+		"Biología Marina",
+		"Ciencias Marinas y Costeras",
+		"Gestión de Recursos Naturales",
+		"Desarrollo Rural",
+		"Ingeniería en Biotecnología",
+		"Ciencias Ambientales",
+		"Gestión Ambiental",
+		"Ingeniería Hidrológica",
+		"Meteorología",
+		"Ciencias Geográficas con énfasis en Ordenamiento Territorial",
+		
+		// CENTRO DE INVESTIGACIÓN Y DOCENCIA EN EDUCACIÓN (CIDE)
+		"Pedagogía con énfasis en Educación Preescolar",
+		"Pedagogía con énfasis en I y II Ciclos",
+		"Enseñanza del Inglés",
+		"Enseñanza del Francés",
+		"Enseñanza de las Matemáticas",
+		"Enseñanza de las Ciencias Naturales",
+		"Enseñanza de los Estudios Sociales",
+		"Enseñanza del Castellano y Literatura",
+		"Enseñanza de la Filosofía",
+		"Educación Física",
+		"Enseñanza de la Música",
+		"Enseñanza de las Artes Plásticas",
+		"Orientación",
+		"Educación Especial",
+		"Administración Educativa",
+		"Bibliotecología",
+		"Tecnología Educativa",
+		"Educación Rural",
+		"Educación de Adultos",
+		
+		// SEDE REGIONAL BRUNCA
+		"Administración con énfasis en Gestión Financiera",
+		"Ingeniería Industrial",
+		"Turismo",
+		"Enseñanza del Inglés para III Ciclo y Educación Diversificada",
+		"Ciencias Forestales",
+		"Gestión Empresarial del Turismo Sostenible",
+		
+		// SEDE REGIONAL CHOROTEGA
+		"Gestión Empresarial del Turismo Sostenible",
+		"Administración",
+		"Contaduría Pública",
+		"Ingeniería en Sistemas de Información",
+		"Ciencias Forestales",
+		"Ingeniería Agronómica",
+		
+		// SEDE REGIONAL PACÍFICO CENTRAL
+		"Ciencias Marinas y Costeras",
+		"Ingeniería en Ciencias Forestales",
+		"Gestión Empresarial del Turismo Sostenible",
+		"Ciencias de la Educación con énfasis en Educación Rural",
+		
+		// SEDE REGIONAL HUETAR NORTE
+		"Administración",
+		"Gestión Empresarial del Turismo Sostenible",
+		"Ingeniería en Sistemas de Información",
+		"Ciencias Forestales",
+		"Ingeniería Agronómica",
+		"Ciencias de la Educación",
+		
+		// SEDE REGIONAL HUETAR ATLÁNTICA
+		"Administración",
+		"Ingeniería en Sistemas de Información",
+		"Ciencias Forestales",
+		"Turismo",
+		"Enseñanza del Inglés",
+		
+		// SEDE INTERUNIVERSITARIA DE ALAJUELA
+		"Ingeniería Industrial",
+		"Administración",
+		"Contaduría Pública",
+		
+		// PROGRAMAS ESPECIALES Y OTROS
+		"Topografía",
+		"Cartografía",
+		"Manejo de Recursos Naturales",
+		"Desarrollo Humano",
+		"Estudios Interdisciplinarios",
+		"Gestión de la Información",
+		"Cooperativismo",
+		"Desarrollo Comunitario Sustentable"
 	];
 
 	const handleChange = (e) => {
-		setFormData({
-			...formData,
-			[e.target.name]: e.target.value
-		});
+		const { name, value } = e.target;
+		
+		// Si es el campo identificación, solo permitir números
+		if (name === "identificacion") {
+			const numericValue = value.replace(/\D/g, ""); // Remover todo lo que no sea dígito
+			if (numericValue.length <= 12) { // Máximo 12 dígitos
+				setFormData({
+					...formData,
+					[name]: numericValue
+				});
+			}
+			if (error) setError("");
+			return;
+		}
+		
+		// Si cambia el rol a Administrador, limpiar la carrera
+		if (name === "rol" && value === "Administrador") {
+			setFormData({
+				...formData,
+				[name]: value,
+				carrera: "" // Limpiar carrera para administradores
+			});
+		} else {
+			setFormData({
+				...formData,
+				[name]: value
+			});
+		}
+		
 		if (error) setError("");
 	};
 
 	const validateForm = () => {
-		if (formData.contrasena.length < 6) {
-			setError("La contraseña debe tener al menos 6 caracteres");
+		// Validaciones básicas
+		if (!formData.nombre.trim()) {
+			setError("El nombre es requerido");
 			return false;
 		}
+		if (!formData.apellido1.trim()) {
+			setError("El primer apellido es requerido");
+			return false;
+		}
+		if (!formData.identificacion.trim()) {
+			setError("La identificación es requerida");
+			return false;
+		}
+		
+		// Validar identificación: solo números entre 9 y 12 dígitos
+		const identificacionRegex = /^\d{9,12}$/;
+		if (!identificacionRegex.test(formData.identificacion)) {
+			setError("La identificación debe contener entre 9 y 12 dígitos numéricos");
+			return false;
+		}
+		
+		if (!formData.correo.trim()) {
+			setError("El correo es requerido");
+			return false;
+		}
+		
+		// Solo validar carrera si no es administrador
+		if (formData.rol !== "Administrador" && !formData.carrera) {
+			setError("La carrera es requerida");
+			return false;
+		}
+		
+		// Validar formato de email
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(formData.correo)) {
+			setError("El formato del correo no es válido");
+			return false;
+		}
+
 		return true;
 	};
 
@@ -53,18 +243,29 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 		setError("");
 
 		try {
+			// Agregar una contraseña temporal que será reemplazada después de la verificación
+			const dataToSend = {
+				...formData,
+				contrasena: "TempPassword123!" // Contraseña temporal que será reemplazada
+			};
+
+			// Si es administrador, NO enviar campo carrera (eliminarlo del objeto)
+			if (formData.rol === "Administrador") {
+				delete dataToSend.carrera;
+			}
+
 			const response = await fetch("http://localhost:5276/api/Usuario/AddUsuario", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify(formData),
+				body: JSON.stringify(dataToSend),
 			});
 
 			const data = await response.json();
 
 			if (response.ok) {
-				onSuccess(`Usuario ${formData.nombre} ${formData.apellido1} creado exitosamente. Se envió código de verificación a ${formData.correo}`);
+				onSuccess(`Usuario ${formData.nombre} ${formData.apellido1} creado exitosamente. Se envió código de verificación a ${formData.correo}. Al verificar su cuenta, recibirá una contraseña automática por correo.`);
 				handleClose();
 			} else {
 				setError(data.mensaje || "Error al crear usuario");
@@ -85,8 +286,7 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 			identificacion: "",
 			rol: "Estudiante",
 			carrera: "",
-			correo: "",
-			contrasena: ""
+			correo: ""
 		});
 		setError("");
 		onClose();
@@ -113,6 +313,12 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 					</div>
 					<h2 className="text-2xl font-bold text-gray-100 mb-2">Crear Nuevo Usuario</h2>
 					<p className="text-gray-400">Complete los datos del nuevo usuario</p>
+					<div className="mt-2 p-3 bg-blue-500 bg-opacity-20 border border-blue-500 rounded-lg">
+						<p className="text-blue-300 text-sm">
+							<strong>Nota:</strong> El usuario recibirá un código de verificación por correo. 
+							Al verificar su cuenta, se generará automáticamente una contraseña segura.
+						</p>
+					</div>
 				</div>
 
 				{/* Formulario */}
@@ -165,9 +371,13 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 								value={formData.identificacion}
 								onChange={handleChange}
 								required
+								maxLength="12"
 								className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
-								placeholder="Cédula o ID"
+								placeholder="Ejemplo: 123456789"
 							/>
+							<p className="text-xs text-gray-500 mt-1">
+								Solo números, entre 9 y 12 dígitos
+							</p>
 						</div>
 					</div>
 
@@ -191,42 +401,43 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 								name="carrera"
 								value={formData.carrera}
 								onChange={handleChange}
-								required
-								className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+								required={formData.rol !== "Administrador"}
+								disabled={formData.rol === "Administrador"}
+								className={`w-full px-3 py-2 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200 ${
+									formData.rol === "Administrador" 
+										? "bg-gray-600 cursor-not-allowed opacity-50" 
+										: "bg-gray-700"
+								}`}
 							>
-								<option value="">Seleccionar carrera</option>
-								{carreras.map((carrera) => (
+								<option value="">
+									{formData.rol === "Administrador" ? "No aplica para administradores" : "Seleccionar carrera"}
+								</option>
+								{formData.rol !== "Administrador" && carreras.map((carrera) => (
 									<option key={carrera} value={carrera}>{carrera}</option>
 								))}
 							</select>
+							{formData.rol === "Administrador" && (
+								<p className="text-xs text-gray-500 mt-1">
+									Los administradores del sistema no requieren carrera
+								</p>
+							)}
 						</div>
 					</div>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label className="block text-sm font-medium text-gray-300 mb-2">Correo Electrónico</label>
-							<input
-								type="email"
-								name="correo"
-								value={formData.correo}
-								onChange={handleChange}
-								required
-								className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
-								placeholder="correo@ejemplo.com"
-							/>
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-300 mb-2">Contraseña Temporal</label>
-							<input
-								type="password"
-								name="contrasena"
-								value={formData.contrasena}
-								onChange={handleChange}
-								required
-								className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
-								placeholder="Mínimo 6 caracteres"
-							/>
-						</div>
+					<div>
+						<label className="block text-sm font-medium text-gray-300 mb-2">Correo Electrónico</label>
+						<input
+							type="email"
+							name="correo"
+							value={formData.correo}
+							onChange={handleChange}
+							required
+							className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition duration-200"
+							placeholder="correo@ejemplo.com"
+						/>
+						<p className="text-xs text-gray-500 mt-1">
+							Se enviará un código de verificación a este correo
+						</p>
 					</div>
 
 					{/* Error */}

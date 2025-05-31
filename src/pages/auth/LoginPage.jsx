@@ -73,7 +73,18 @@ const LoginPage = () => {
 				
 				// Guardar datos del usuario en localStorage
 				localStorage.setItem("usuario", JSON.stringify(data.usuario));
+				localStorage.setItem("usuarioId", data.usuario.usuarioId.toString());
 				localStorage.setItem("isAuthenticated", "true");
+				
+				// Limpiar datos temporales de verificación si existen
+				localStorage.removeItem("pendingUserId");
+				localStorage.removeItem("userEmail");
+				
+				console.log("Login exitoso - Usuario guardado:", {
+					usuarioId: data.usuario.usuarioId,
+					nombre: data.usuario.nombre,
+					rol: data.usuario.rol
+				});
 				
 				// Esperar 2 segundos antes de redirigir
 				setTimeout(() => {

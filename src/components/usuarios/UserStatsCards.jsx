@@ -26,6 +26,7 @@ const UserStatsCards = ({ users, loading }) => {
 	const stats = {
 		total: users.length,
 		active: users.filter(u => u.activo).length,
+		admins: users.filter(u => u.rol === 'Administrador').length,
 		students: users.filter(u => u.rol === 'Estudiante').length,
 		professors: users.filter(u => u.rol === 'Profesor').length
 	};
@@ -47,22 +48,29 @@ const UserStatsCards = ({ users, loading }) => {
 		},
 		{
 			icon: Users,
-			title: "Estudiantes",
+			title: "Administradores",
+			value: stats.admins,
+			color: "bg-red-500",
+			delay: 0.3
+		},
+		{
+			icon: Users,
+			title: "Estudiantes",	
 			value: stats.students,
 			color: "bg-purple-500",
-			delay: 0.3
+			delay: 0.4
 		},
 		{
 			icon: Users,
 			title: "Profesores",
 			value: stats.professors,
 			color: "bg-yellow-500",
-			delay: 0.4
+			delay: 0.5
 		}
 	];
 
 	return (
-		<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+		<div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
 			{statsConfig.map((stat, index) => (
 				<StatCard
 					key={index}

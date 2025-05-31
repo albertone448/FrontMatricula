@@ -12,9 +12,16 @@ export const authUtils = {
 		return userData ? JSON.parse(userData) : null;
 	},
 
+	// Obtener solo el usuarioId
+	getUserId: () => {
+		const userId = localStorage.getItem("usuarioId");
+		return userId ? parseInt(userId) : null;
+	},
+
 	// Guardar datos de usuario después del login
 	setUser: (userData) => {
 		localStorage.setItem("usuario", JSON.stringify(userData));
+		localStorage.setItem("usuarioId", userData.usuarioId.toString());
 		localStorage.setItem("isAuthenticated", "true");
 	},
 
@@ -22,6 +29,7 @@ export const authUtils = {
 	logout: () => {
 		localStorage.removeItem("isAuthenticated");
 		localStorage.removeItem("usuario");
+		localStorage.removeItem("usuarioId");
 		localStorage.removeItem("pendingUserId");
 		localStorage.removeItem("userEmail");
 	},
@@ -37,6 +45,18 @@ export const authUtils = {
 		const user = authUtils.getUser();
 		if (!user) return "Usuario";
 		return `${user.nombre || ""} ${user.apellido1 || ""}`.trim() || "Usuario";
+	},
+
+	// Verificar si el usuario está activo
+	isUserActive: () => {
+		const user = authUtils.getUser();
+		return user?.activo === true;
+	},
+
+	// Obtener el rol del usuario
+	getUserRole: () => {
+		const user = authUtils.getUser();
+		return user?.rol || null;
 	}
 };
 
@@ -46,11 +66,14 @@ export const apiConfig = {
 	endpoints: {
 		login: "/Usuario/Login",
 		register: "/Usuario/AddUsuario",
-		verify: "/Usuario/VerificarUsuario"
+		verify: "/Usuario/VerificarUsuario",
+		getAllUsers: "/Usuario/GetTodosLosUsuarios",
+		updateUser: "/Usuario/UpdateUsuario",
+		deleteUser: "/Usuario/DeleteUsuario"
 	}
 };
 
-// Función helper para hacer peticiones a la API
+// Función helper para hacer peticiones a la API con autenticación
 export const apiRequest = async (endpoint, options = {}) => {
 	const url = `${apiConfig.baseURL}${endpoint}`;
 	
@@ -59,6 +82,12 @@ export const apiRequest = async (endpoint, options = {}) => {
 			"Content-Type": "application/json",
 		},
 	};
+
+	// Agregar usuarioId a los headers si está disponible
+	const userId = authUtils.getUserId();
+	if (userId) {
+		defaultOptions.headers["X-Usuario-Id"] = userId.toString();
+	}
 
 	const config = {
 		...defaultOptions,
@@ -85,5 +114,21 @@ export const apiRequest = async (endpoint, options = {}) => {
 			data: { mensaje: "Error de conexión" },
 			status: 0
 		};
+	}
+};
+
+// Función para verificar si la sesión sigue siendo válida
+export const validateSession = async () => {
+	const userId = authUtils.getUserId();
+	if (!userId) return false;
+
+	try {
+		// Aquí podrías hacer una petición al servidor para validar que el usuario sigue activo
+		// Por ahora solo verificamos que tengamos los datos locales
+		const user = authUtils.getUser();
+		return user && user.usuarioId === userId;
+	} catch (error) {
+		console.error("Error validating session:", error);
+		return false;
 	}
 };

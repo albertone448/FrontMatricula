@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import { Search, Edit, Trash2, Users } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Edit, Trash2, Users, ChevronLeft, ChevronRight } from "lucide-react";
 
 const RoleBadge = ({ rol }) => {
 	const colorClasses = {
@@ -50,14 +51,14 @@ const UserActions = ({ user, onEdit, onDelete }) => (
 	<div className="flex space-x-2">
 		<button 
 			onClick={() => onEdit(user)}
-			className="text-blue-400 hover:text-blue-300 transition duration-200"
+			className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
 			title="Editar usuario"
 		>
 			<Edit className="w-4 h-4" />
 		</button>
 		<button 
 			onClick={() => onDelete(user)}
-			className="text-red-400 hover:text-red-300 transition duration-200"
+			className="text-red-400 hover:text-red-300 transition-colors duration-200"
 			title="Eliminar usuario"
 		>
 			<Trash2 className="w-4 h-4" />
@@ -73,13 +74,95 @@ const LoadingTable = () => (
 );
 
 const EmptyTable = ({ searchTerm }) => (
-	<div className="text-center py-8">
+	<motion.div 
+		initial={{ opacity: 0 }}
+		animate={{ opacity: 1 }}
+		className="text-center py-8"
+	>
 		<Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
 		<p className="text-gray-400">
 			{searchTerm ? "No se encontraron usuarios que coincidan con la búsqueda" : "No hay usuarios registrados"}
 		</p>
-	</div>
+	</motion.div>
 );
+
+const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }) => {
+	const startItem = (currentPage - 1) * itemsPerPage + 1;
+	const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+	const getPageNumbers = useCallback(() => {
+		const pages = [];
+		const maxVisible = 5;
+		
+		if (totalPages <= maxVisible) {
+			for (let i = 1; i <= totalPages; i++) {
+				pages.push(i);
+			}
+		} else {
+			const start = Math.max(1, currentPage - 2);
+			const end = Math.min(totalPages, start + maxVisible - 1);
+			
+			for (let i = start; i <= end; i++) {
+				pages.push(i);
+			}
+		}
+		
+		return pages;
+	}, [currentPage, totalPages]);
+
+	if (totalPages <= 1) return null;
+
+	return (
+		<div className="px-6 py-4 border-t border-gray-700">
+			<div className="flex items-center justify-between">
+				{/* Información de registros */}
+				<div className="text-sm text-gray-400">
+					Mostrando {startItem} - {endItem} de {totalItems} usuarios
+				</div>
+
+				{/* Controles de paginación */}
+				<div className="flex items-center space-x-2">
+					{/* Botón anterior */}
+					<button
+						onClick={() => onPageChange(currentPage - 1)}
+						disabled={currentPage === 1}
+						className="px-3 py-2 text-sm bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
+					>
+						<ChevronLeft className="w-4 h-4 mr-1" />
+						Anterior
+					</button>
+
+					{/* Números de página */}
+					<div className="flex space-x-1">
+						{getPageNumbers().map((page) => (
+							<button
+								key={page}
+								onClick={() => onPageChange(page)}
+								className={`px-3 py-2 text-sm rounded-lg transition-colors duration-200 ${
+									page === currentPage
+										? "bg-blue-600 text-white"
+										: "bg-gray-700 text-gray-300 hover:bg-gray-600"
+								}`}
+							>
+								{page}
+							</button>
+						))}
+					</div>
+
+					{/* Botón siguiente */}
+					<button
+						onClick={() => onPageChange(currentPage + 1)}
+						disabled={currentPage === totalPages}
+						className="px-3 py-2 text-sm bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center"
+					>
+						Siguiente
+						<ChevronRight className="w-4 h-4 ml-1" />
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+};
 
 const UsersTable = ({ 
 	users, 
@@ -89,32 +172,90 @@ const UsersTable = ({
 	onEditUser, 
 	onDeleteUser 
 }) => {
-	const filteredUsers = users.filter(user =>
-		user.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-		user.apellido1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-		user.correo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-		user.identificacion.includes(searchTerm)
-	);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+	const [isSearching, setIsSearching] = useState(false);
+	const itemsPerPage = 10;
+
+	// Debounce del término de búsqueda
+	useEffect(() => {
+		setIsSearching(true);
+		const timer = setTimeout(() => {
+			setDebouncedSearchTerm(searchTerm);
+			setIsSearching(false);
+		}, 300);
+
+		return () => clearTimeout(timer);
+	}, [searchTerm]);
+
+	// Filtrar usuarios según el término de búsqueda (con debounce)
+	const filteredUsers = useMemo(() => {
+		if (!debouncedSearchTerm.trim()) return users;
+		
+		const searchLower = debouncedSearchTerm.toLowerCase();
+		return users.filter(user =>
+			user.nombre.toLowerCase().includes(searchLower) ||
+			user.apellido1.toLowerCase().includes(searchLower) ||
+			user.apellido2?.toLowerCase().includes(searchLower) ||
+			user.correo.toLowerCase().includes(searchLower) ||
+			user.identificacion.includes(debouncedSearchTerm) ||
+			user.rol.toLowerCase().includes(searchLower) ||
+			user.carrera.toLowerCase().includes(searchLower)
+		);
+	}, [users, debouncedSearchTerm]);
+
+	// Calcular paginación
+	const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+	const startIndex = (currentPage - 1) * itemsPerPage;
+	const currentUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
+
+	// Resetear a página 1 cuando cambie el término de búsqueda (con debounce)
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [debouncedSearchTerm]);
+
+	// Resetear a página 1 si la página actual es mayor al total de páginas
+	useEffect(() => {
+		if (currentPage > totalPages && totalPages > 0) {
+			setCurrentPage(1);
+		}
+	}, [currentPage, totalPages]);
+
+	const handlePageChange = useCallback((page) => {
+		setCurrentPage(page);
+	}, []);
+
+	const handleSearchChange = useCallback((value) => {
+		onSearchChange(value);
+	}, [onSearchChange]);
 
 	return (
-		<motion.div
-			initial={{ opacity: 0, y: 20 }}
-			animate={{ opacity: 1, y: 0 }}
-			transition={{ delay: 0.5 }}
-			className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl border border-gray-700"
-		>
+		<div className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl border border-gray-700">
 			{/* Header de la tabla */}
 			<div className="p-6 border-b border-gray-700">
 				<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-					<h3 className="text-lg font-semibold text-gray-100 mb-4 sm:mb-0">Lista de Usuarios</h3>
-					<div className="relative">
+					<div>
+						<h3 className="text-lg font-semibold text-gray-100 mb-1">Lista de Usuarios</h3>
+						<p className="text-sm text-gray-400">
+							{isSearching ? (
+								"Buscando..."
+							) : (
+								<>
+									{filteredUsers.length} {filteredUsers.length === 1 ? 'usuario' : 'usuarios'}
+									{debouncedSearchTerm && ` encontrado${filteredUsers.length === 1 ? '' : 's'} para "${debouncedSearchTerm}"`}
+									{!debouncedSearchTerm && ` total${filteredUsers.length === 1 ? '' : 'es'}`}
+								</>
+							)}
+						</p>
+					</div>
+					<div className="relative mt-4 sm:mt-0">
 						<Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
 						<input
 							type="text"
-							placeholder="Buscar usuarios..."
+							placeholder="Buscar por nombre, apellido, correo, ID, rol o carrera..."
 							value={searchTerm}
-							onChange={(e) => onSearchChange(e.target.value)}
-							className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+							onChange={(e) => handleSearchChange(e.target.value)}
+							className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 w-80"
 						/>
 					</div>
 				</div>
@@ -125,61 +266,87 @@ const UsersTable = ({
 				{loading ? (
 					<LoadingTable />
 				) : (
-					<>
-						{filteredUsers.length > 0 ? (
-							<table className="min-w-full divide-y divide-gray-700">
-								<thead>
-									<tr>
-										<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Usuario</th>
-										<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Identificación</th>
-										<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Rol</th>
-										<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Carrera</th>
-										<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Estado</th>
-										<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Acciones</th>
-									</tr>
-								</thead>
-								<tbody className="divide-y divide-gray-700">
-									{filteredUsers.map((user) => (
-										<motion.tr
-											key={user.usuarioId}
-											initial={{ opacity: 0 }}
-											animate={{ opacity: 1 }}
-											transition={{ duration: 0.3 }}
-											className="hover:bg-gray-700 hover:bg-opacity-30 transition duration-200"
-										>
-											<td className="px-6 py-4 whitespace-nowrap">
-												<UserAvatar user={user} />
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-												{user.identificacion}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap">
-												<RoleBadge rol={user.rol} />
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-												{user.carrera}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap">
-												<StatusBadge user={user} />
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-												<UserActions 
-													user={user} 
-													onEdit={onEditUser}
-													onDelete={onDeleteUser}
-												/>
-											</td>
-										</motion.tr>
-									))}
-								</tbody>
-							</table>
+					<AnimatePresence mode="wait">
+						{currentUsers.length > 0 ? (
+							<motion.div
+								key={`table-content-${debouncedSearchTerm}-${currentPage}`}
+								initial={{ opacity: 0 }}
+								animate={{ opacity: 1 }}
+								exit={{ opacity: 0 }}
+								transition={{ duration: 0.2 }}
+							>
+								<table className="min-w-full divide-y divide-gray-700">
+									<thead>
+										<tr>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Usuario</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Identificación</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Rol</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Carrera</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Estado</th>
+											<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Acciones</th>
+										</tr>
+									</thead>
+									<tbody className="divide-y divide-gray-700">
+										<AnimatePresence>
+											{currentUsers.map((user) => (
+												<motion.tr
+													key={user.usuarioId}
+													layout
+													initial={{ opacity: 0 }}
+													animate={{ opacity: 1 }}
+													exit={{ opacity: 0 }}
+													transition={{ 
+														duration: 0.2,
+														ease: "easeOut"
+													}}
+													className="hover:bg-gray-700 hover:bg-opacity-30 transition-colors duration-200"
+												>
+													<td className="px-6 py-4 whitespace-nowrap">
+														<UserAvatar user={user} />
+													</td>
+													<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+														{user.identificacion}
+													</td>
+													<td className="px-6 py-4 whitespace-nowrap">
+														<RoleBadge rol={user.rol} />
+													</td>
+													<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+														{user.carrera}
+													</td>
+													<td className="px-6 py-4 whitespace-nowrap">
+														<StatusBadge user={user} />
+													</td>
+													<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+														<UserActions 
+															user={user} 
+															onEdit={onEditUser}
+															onDelete={onDeleteUser}
+														/>
+													</td>
+												</motion.tr>
+											))}
+										</AnimatePresence>
+									</tbody>
+								</table>
+							</motion.div>
 						) : (
-							<EmptyTable searchTerm={searchTerm} />
+							<EmptyTable searchTerm={debouncedSearchTerm} />
 						)}
-					</>
+					</AnimatePresence>
 				)}
 			</div>
-		</motion.div>
+
+			{/* Paginación */}
+			{!loading && filteredUsers.length > 0 && (
+				<Pagination
+					currentPage={currentPage}
+					totalPages={totalPages}
+					onPageChange={handlePageChange}
+					totalItems={filteredUsers.length}
+					itemsPerPage={itemsPerPage}
+				/>
+			)}
+		</div>
 	);
 };
 
