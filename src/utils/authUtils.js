@@ -3,7 +3,7 @@
 export const authUtils = {
 	// Verificar si el usuario está autenticado
 	isAuthenticated: () => {
-		return localStorage.getItem("isAuthenticated") === "true";
+		return localStorage.getItem("isAuthenticated") === "true" && localStorage.getItem("token");
 	},
 
 	// Obtener datos del usuario
@@ -18,10 +18,37 @@ export const authUtils = {
 		return userId ? parseInt(userId) : null;
 	},
 
+	// Obtener el token
+	getToken: () => {
+		return localStorage.getItem("token");
+	},
+
+	// Verificar si el token ha expirado
+	isTokenExpired: () => {
+		const tokenExpiration = localStorage.getItem("tokenExpiration");
+		if (!tokenExpiration) return true;
+		
+		const expirationDate = new Date(tokenExpiration);
+		const now = new Date();
+		return now >= expirationDate;
+	},
+
 	// Guardar datos de usuario después del login
-	setUser: (userData) => {
-		localStorage.setItem("usuario", JSON.stringify(userData));
+	setUser: (userData, token, tokenExpiration) => {
+		// Solo guardar los campos específicos requeridos
+		const userToStore = {
+			usuarioId: userData.usuarioId,
+			nombre: userData.nombre,
+			apellido1: userData.apellido1,
+			carrera: userData.carrera,
+			identificacion: userData.identificacion,
+			correo: userData.correo
+		};
+
+		localStorage.setItem("usuario", JSON.stringify(userToStore));
 		localStorage.setItem("usuarioId", userData.usuarioId.toString());
+		localStorage.setItem("token", token);
+		localStorage.setItem("tokenExpiration", tokenExpiration);
 		localStorage.setItem("isAuthenticated", "true");
 	},
 
@@ -30,6 +57,8 @@ export const authUtils = {
 		localStorage.removeItem("isAuthenticated");
 		localStorage.removeItem("usuario");
 		localStorage.removeItem("usuarioId");
+		localStorage.removeItem("token");
+		localStorage.removeItem("tokenExpiration");
 		localStorage.removeItem("pendingUserId");
 		localStorage.removeItem("userEmail");
 	},
@@ -53,10 +82,15 @@ export const authUtils = {
 		return user?.activo === true;
 	},
 
-	// Obtener el rol del usuario
+	// Obtener el rol del usuario (ya no se guarda en localStorage, pero mantenemos la función)
 	getUserRole: () => {
 		const user = authUtils.getUser();
 		return user?.rol || null;
+	},
+
+	// Verificar si la sesión es válida (autenticado y token no expirado)
+	isSessionValid: () => {
+		return authUtils.isAuthenticated() && !authUtils.isTokenExpired();
 	}
 };
 
@@ -83,6 +117,12 @@ export const apiRequest = async (endpoint, options = {}) => {
 		},
 	};
 
+	// Agregar token a los headers si está disponible
+	const token = authUtils.getToken();
+	if (token) {
+		defaultOptions.headers["Authorization"] = `Bearer ${token}`;
+	}
+
 	// Agregar usuarioId a los headers si está disponible
 	const userId = authUtils.getUserId();
 	if (userId) {
@@ -100,6 +140,18 @@ export const apiRequest = async (endpoint, options = {}) => {
 
 	try {
 		const response = await fetch(url, config);
+		
+		// Si el token ha expirado (401), limpiar la sesión
+		if (response.status === 401) {
+			authUtils.logout();
+			window.location.href = "/login";
+			return {
+				success: false,
+				data: { mensaje: "Sesión expirada" },
+				status: 401
+			};
+		}
+
 		const data = await response.json();
 		
 		return {
@@ -119,14 +171,19 @@ export const apiRequest = async (endpoint, options = {}) => {
 
 // Función para verificar si la sesión sigue siendo válida
 export const validateSession = async () => {
-	const userId = authUtils.getUserId();
-	if (!userId) return false;
+	// Verificar si tenemos los datos básicos
+	if (!authUtils.isSessionValid()) {
+		return false;
+	}
 
 	try {
 		// Aquí podrías hacer una petición al servidor para validar que el usuario sigue activo
-		// Por ahora solo verificamos que tengamos los datos locales
+		// Por ahora solo verificamos que tengamos los datos locales y el token no haya expirado
 		const user = authUtils.getUser();
-		return user && user.usuarioId === userId;
+		const userId = authUtils.getUserId();
+		const token = authUtils.getToken();
+		
+		return user && userId && token && user.usuarioId === userId && !authUtils.isTokenExpired();
 	} catch (error) {
 		console.error("Error validating session:", error);
 		return false;

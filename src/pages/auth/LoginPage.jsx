@@ -71,19 +71,36 @@ const LoginPage = () => {
 				// Mostrar mensaje de éxito
 				setSuccess(true);
 				
-				// Guardar datos del usuario en localStorage
-				localStorage.setItem("usuario", JSON.stringify(data.usuario));
+				// Guardar solo los datos necesarios del usuario en localStorage
+				const userData = {
+					usuarioId: data.usuario.usuarioId,
+					nombre: data.usuario.nombre,
+					apellido1: data.usuario.apellido1,
+					carrera: data.usuario.carrera,
+					identificacion: data.usuario.identificacion,
+					correo: data.usuario.correo
+				};
+
+				// Guardar todos los datos de autenticación
+				localStorage.setItem("usuario", JSON.stringify(userData));
 				localStorage.setItem("usuarioId", data.usuario.usuarioId.toString());
+				localStorage.setItem("token", data.token); // Guardar el token
 				localStorage.setItem("isAuthenticated", "true");
 				
 				// Limpiar datos temporales de verificación si existen
 				localStorage.removeItem("pendingUserId");
 				localStorage.removeItem("userEmail");
 				
-				console.log("Login exitoso - Usuario guardado:", {
+				console.log("Login exitoso - Datos guardados:", {
 					usuarioId: data.usuario.usuarioId,
 					nombre: data.usuario.nombre,
-					rol: data.usuario.rol
+					token: data.token ? "Token guardado correctamente" : "Error: No se recibió token",
+					tokenExpiration: data.tokenExpiration,
+					datosGuardados: {
+						usuario: userData,
+						token: localStorage.getItem("token") ? "✓ Guardado" : "✗ Error",
+						tokenExpiration: localStorage.getItem("tokenExpiration") ? "✓ Guardado" : "✗ Error"
+					}
 				});
 				
 				// Esperar 2 segundos antes de redirigir
