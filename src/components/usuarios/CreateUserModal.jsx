@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { UserPlus, AlertCircle } from "lucide-react";
+import { authUtils } from "../../utils/authUtils";
 
 const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 	const [formData, setFormData] = useState({
@@ -243,6 +244,14 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 		setError("");
 
 		try {
+			// Verificar que tengamos token de autorización
+			const token = authUtils.getToken();
+			if (!token) {
+				setError("No se encontró token de autenticación. Por favor, inicie sesión nuevamente.");
+				setLoading(false);
+				return;
+			}
+
 			// Agregar una contraseña temporal que será reemplazada después de la verificación
 			const dataToSend = {
 				...formData,
@@ -258,9 +267,18 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
+					"Authorization": `Bearer ${token}`,
 				},
 				body: JSON.stringify(dataToSend),
 			});
+
+			// Verificar si el token expiró
+			if (response.status === 401) {
+				authUtils.logout();
+				setError("Sesión expirada. Por favor, inicie sesión nuevamente.");
+				window.location.href = '/login';
+				return;
+			}
 
 			const data = await response.json();
 

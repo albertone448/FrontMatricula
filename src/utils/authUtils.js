@@ -3,7 +3,17 @@
 export const authUtils = {
 	// Verificar si el usuario está autenticado
 	isAuthenticated: () => {
-		return localStorage.getItem("isAuthenticated") === "true" && localStorage.getItem("token");
+		const authFlag = localStorage.getItem("isAuthenticated") === "true";
+		const hasToken = !!localStorage.getItem("token");
+		const result = authFlag && hasToken;
+		
+		console.log('🔍 Verificación de autenticación:', {
+			authFlag,
+			hasToken,
+			result
+		});
+		
+		return result;
 	},
 
 	// Obtener datos del usuario
@@ -26,11 +36,28 @@ export const authUtils = {
 	// Verificar si el token ha expirado
 	isTokenExpired: () => {
 		const tokenExpiration = localStorage.getItem("tokenExpiration");
-		if (!tokenExpiration) return true;
+		if (!tokenExpiration) {
+			console.log('⚠️ No hay tokenExpiration en localStorage');
+			return true;
+		}
 		
-		const expirationDate = new Date(tokenExpiration);
-		const now = new Date();
-		return now >= expirationDate;
+		try {
+			const expirationDate = new Date(tokenExpiration);
+			const now = new Date();
+			const isExpired = now >= expirationDate;
+			
+			console.log('🕐 Verificación de expiración del token:', {
+				tokenExpiration,
+				expirationDate: expirationDate.toISOString(),
+				now: now.toISOString(),
+				isExpired
+			});
+			
+			return isExpired;
+		} catch (error) {
+			console.error('❌ Error al verificar expiración del token:', error);
+			return true;
+		}
 	},
 
 	// Guardar datos de usuario después del login
@@ -90,7 +117,19 @@ export const authUtils = {
 
 	// Verificar si la sesión es válida (autenticado y token no expirado)
 	isSessionValid: () => {
-		return authUtils.isAuthenticated() && !authUtils.isTokenExpired();
+		const isAuth = authUtils.isAuthenticated();
+		const isExpired = authUtils.isTokenExpired();
+		const isValid = isAuth && !isExpired;
+		
+		console.log('🔐 Verificación de sesión completa:', {
+			isAuthenticated: isAuth,
+			isTokenExpired: isExpired,
+			isSessionValid: isValid,
+			hasToken: !!authUtils.getToken(),
+			userId: authUtils.getUserId()
+		});
+		
+		return isValid;
 	}
 };
 

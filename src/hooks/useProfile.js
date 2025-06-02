@@ -12,19 +12,31 @@ export const useProfile = () => {
 		setError("");
 		
 		try {
-			// Obtener ID del localStorage usando authUtils
+			// Obtener ID del localStorage y token usando authUtils
 			const userId = authUtils.getUserId();
+			const token = authUtils.getToken();
 			
 			if (!userId) {
 				throw new Error('No se encontró el ID del usuario en el almacenamiento local');
+			}
+
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
 			}
 
 			const response = await fetch(`http://localhost:5276/api/Usuario/GetUsuarioPorId/${userId}`, {
 				method: 'GET',
 				headers: {
 					'accept': '*/*',
+					'Authorization': `Bearer ${token}`,
 				},
 			});
+
+			// Verificar si el token expiró
+			if (response.status === 401) {
+				authUtils.logout();
+				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+			}
 
 			if (!response.ok) {
 				throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -44,18 +56,30 @@ export const useProfile = () => {
 	const updateProfile = useCallback(async (updatedData) => {
 		try {
 			const userId = authUtils.getUserId();
+			const token = authUtils.getToken();
 			
 			if (!userId) {
 				throw new Error('No se encontró el ID del usuario');
+			}
+
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
 			}
 
 			const response = await fetch(`http://localhost:5276/api/Usuario/UpdateUsuario/${userId}`, {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`,
 				},
 				body: JSON.stringify(updatedData),
 			});
+
+			// Verificar si el token expiró
+			if (response.status === 401) {
+				authUtils.logout();
+				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+			}
 
 			if (!response.ok) {
 				const errorData = await response.json();
