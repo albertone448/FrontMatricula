@@ -60,11 +60,13 @@ export const userService = {
 				throw new Error('Token de autenticación no encontrado');
 			}
 
-			const response = await api.put(`Usuario/UpdateUsuario/${userId}`, userData);
+			// El endpoint PUT /api/Usuario/UpdateUsuario espera el UsuarioDTO completo en el body
+			// No incluye userId en la URL, sino que viene en el objeto userData
+			const response = await api.put('Usuario/UpdateUsuario', userData);
 			
 			// Manejar respuesta basada en el status code
-			if (response.status === 204) {
-				console.log('Usuario actualizado exitosamente (204 No Content)');
+			if (response.status === 200) {
+				console.log('Usuario actualizado exitosamente (200 OK)');
 				return { success: true, data: userData };
 			}
 			
