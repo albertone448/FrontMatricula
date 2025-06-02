@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { authUtils } from '../utils/authUtils';
+import api from '../services/apiConfig';
 
 export const usePasswordChange = () => {
 	const [loading, setLoading] = useState(false);
@@ -26,41 +27,38 @@ export const usePasswordChange = () => {
 
 			console.log('Enviando cambio de contraseña para usuario:', usuarioId);
 
-			const response = await fetch('http://localhost:5276/api/Usuario/CambiarContrasena', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'Accept': '*/*',
-					'Authorization': `Bearer ${token}`,
-				},
-				body: JSON.stringify({
-					usuarioId: usuarioId,
-					contrasenaActual: contrasenaActual,
-					contrasenaNueva: contrasenaNueva
-				}),
+			const response = await api.post('Usuario/CambiarContrasena', {
+				usuarioId: usuarioId,
+				contrasenaActual: contrasenaActual,
+				contrasenaNueva: contrasenaNueva
 			});
 
-			// Verificar si el token expiró
-			if (response.status === 401) {
-				authUtils.logout();
-				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
-			}
+			console.log('Respuesta del servidor:', response.data);
 
-			const data = await response.json();
-			console.log('Respuesta del servidor:', data);
-
-			if (response.ok && data.estado === 1) {
+			// Verificar si la respuesta es exitosa (response.data.estado === 1)
+			if (response.data && response.data.estado === 1) {
 				setSuccess(true);
-				return { success: true, message: data.mensaje };
+				return { success: true, message: response.data.mensaje };
 			} else {
-				const errorMessage = data.mensaje || 'Error al cambiar la contraseña';
+				const errorMessage = response.data?.mensaje || 'Error al cambiar la contraseña';
 				setError(errorMessage);
 				return { success: false, message: errorMessage };
 			}
 		} catch (error) {
-			const errorMessage = error.message || 'Error de conexión. Intente nuevamente.';
-			setError(errorMessage);
 			console.error('Error changing password:', error);
+			
+			// Manejo de errores de la API
+			let errorMessage = 'Error de conexión. Intente nuevamente.';
+			
+			if (error.response?.data?.mensaje) {
+				errorMessage = error.response.data.mensaje;
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.message) {
+				errorMessage = error.message;
+			}
+			
+			setError(errorMessage);
 			return { success: false, message: errorMessage };
 		} finally {
 			setLoading(false);

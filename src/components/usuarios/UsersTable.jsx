@@ -47,7 +47,7 @@ const UserAvatar = ({ user }) => (
 	</div>
 );
 
-const UserActions = ({ user, onEdit, onDelete }) => (
+const UserActions = ({ user, onEdit }) => (
 	<div className="flex space-x-2">
 		<button 
 			onClick={() => onEdit(user)}
@@ -56,13 +56,7 @@ const UserActions = ({ user, onEdit, onDelete }) => (
 		>
 			<Edit className="w-4 h-4" />
 		</button>
-		<button 
-			onClick={() => onDelete(user)}
-			className="text-red-400 hover:text-red-300 transition-colors duration-200"
-			title="Eliminar usuario"
-		>
-			<Trash2 className="w-4 h-4" />
-		</button>
+		
 	</div>
 );
 
@@ -169,8 +163,7 @@ const UsersTable = ({
 	loading, 
 	searchTerm, 
 	onSearchChange, 
-	onEditUser, 
-	onDeleteUser 
+	onEditUser 
 }) => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -320,7 +313,6 @@ const UsersTable = ({
 														<UserActions 
 															user={user} 
 															onEdit={onEditUser}
-															onDelete={onDeleteUser}
 														/>
 													</td>
 												</motion.tr>

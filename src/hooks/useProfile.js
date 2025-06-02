@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { authUtils } from '../utils/authUtils';
+import api from '../services/apiConfig';
 
 export const useProfile = () => {
 	const [user, setUser] = useState(null);
@@ -12,7 +13,7 @@ export const useProfile = () => {
 		setError("");
 		
 		try {
-			// Obtener ID del localStorage y token usando authUtils
+			// Obtener ID del localStorage usando authUtils
 			const userId = authUtils.getUserId();
 			const token = authUtils.getToken();
 			
@@ -24,29 +25,11 @@ export const useProfile = () => {
 				throw new Error('Token de autenticación no encontrado');
 			}
 
-			const response = await fetch(`http://localhost:5276/api/Usuario/GetUsuarioPorId/${userId}`, {
-				method: 'GET',
-				headers: {
-					'accept': '*/*',
-					'Authorization': `Bearer ${token}`,
-				},
-			});
-
-			// Verificar si el token expiró
-			if (response.status === 401) {
-				authUtils.logout();
-				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
-			}
-
-			if (!response.ok) {
-				throw new Error(`Error ${response.status}: ${response.statusText}`);
-			}
-
-			const userData = await response.json();
-			setUser(userData);
+			const response = await api.get(`Usuario/GetUsuarioPorId/${userId}`);
+			setUser(response.data);
 		} catch (error) {
-			setError(error.message);
 			console.error('Error al obtener perfil:', error);
+			setError(error.response?.data?.message || error.message);
 		} finally {
 			setLoading(false);
 		}
@@ -54,6 +37,9 @@ export const useProfile = () => {
 
 	// Actualizar perfil del usuario
 	const updateProfile = useCallback(async (updatedData) => {
+		setLoading(true);
+		setError("");
+		
 		try {
 			const userId = authUtils.getUserId();
 			const token = authUtils.getToken();
@@ -66,24 +52,15 @@ export const useProfile = () => {
 				throw new Error('Token de autenticación no encontrado');
 			}
 
-			const response = await fetch(`http://localhost:5276/api/Usuario/UpdateUsuario/${userId}`, {
-				method: 'PUT',
-				headers: {
-					'Content-Type': 'application/json',
-					'Authorization': `Bearer ${token}`,
-				},
-				body: JSON.stringify(updatedData),
-			});
-
-			// Verificar si el token expiró
-			if (response.status === 401) {
-				authUtils.logout();
-				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
-			}
-
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.mensaje || 'Error al actualizar el perfil');
+			const response = await api.put(`Usuario/UpdateUsuario/${userId}`, updatedData);
+			
+			// Manejar respuesta basada en el status code
+			let updatedUser = null;
+			if (response.status === 204) {
+				console.log('Perfil actualizado exitosamente (204 No Content)');
+				updatedUser = { ...user, ...updatedData };
+			} else {
+				updatedUser = response.data;
 			}
 
 			// Actualizar el estado local inmediatamente
@@ -92,12 +69,15 @@ export const useProfile = () => {
 			// Refrescar datos del servidor
 			await fetchProfile();
 			
-			return true;
+			return updatedUser;
 		} catch (error) {
-			setError(error.message);
+			console.error('Error al actualizar perfil:', error);
+			setError(error.response?.data?.message || error.message);
 			throw error;
+		} finally {
+			setLoading(false);
 		}
-	}, [fetchProfile]);
+	}, [fetchProfile, user]);
 
 	// Cargar perfil al montar el hook
 	useEffect(() => {

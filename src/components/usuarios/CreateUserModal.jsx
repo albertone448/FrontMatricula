@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { UserPlus, AlertCircle } from "lucide-react";
 import { authUtils } from "../../utils/authUtils";
+import api from "../../services/apiConfig";
 
 const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 	const [formData, setFormData] = useState({
@@ -263,34 +264,37 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 				delete dataToSend.carrera;
 			}
 
-			const response = await fetch("http://localhost:5276/api/Usuario/AddUsuario", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"Authorization": `Bearer ${token}`,
-				},
-				body: JSON.stringify(dataToSend),
+			console.log('🚀 Creando usuario:', {
+				nombre: dataToSend.nombre,
+				apellido1: dataToSend.apellido1,
+				rol: dataToSend.rol,
+				correo: dataToSend.correo
 			});
 
-			// Verificar si el token expiró
-			if (response.status === 401) {
-				authUtils.logout();
-				setError("Sesión expirada. Por favor, inicie sesión nuevamente.");
-				window.location.href = '/login';
-				return;
-			}
+			const response = await api.post('Usuario/AddUsuario', dataToSend);
 
-			const data = await response.json();
+			console.log('✅ Usuario creado exitosamente:', response.data);
 
-			if (response.ok) {
-				onSuccess(`Usuario ${formData.nombre} ${formData.apellido1} creado exitosamente. Se envió código de verificación a ${formData.correo}. Al verificar su cuenta, recibirá una contraseña automática por correo.`);
-				handleClose();
-			} else {
-				setError(data.mensaje || "Error al crear usuario");
-			}
+			onSuccess(`Usuario ${formData.nombre} ${formData.apellido1} creado exitosamente. Se envió código de verificación a ${formData.correo}. Al verificar su cuenta, recibirá una contraseña automática por correo.`);
+			handleClose();
+
 		} catch (error) {
-			setError("Error de conexión. Intente nuevamente.");
-			console.error("Error:", error);
+			console.error('❌ Error creating user:', error);
+			
+			// Manejo de errores mejorado
+			let errorMessage = "Error de conexión. Intente nuevamente.";
+			
+			if (error.response?.data?.mensaje) {
+				errorMessage = error.response.data.mensaje;
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.response?.status === 401) {
+				errorMessage = "Sesión expirada. Por favor, inicie sesión nuevamente.";
+			} else if (error.message && !error.message.includes("Failed to fetch")) {
+				errorMessage = error.message;
+			}
+			
+			setError(errorMessage);
 		} finally {
 			setLoading(false);
 		}

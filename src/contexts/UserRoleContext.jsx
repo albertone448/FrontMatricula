@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authUtils } from '../utils/authUtils';
+import api from '../services/apiConfig';
 
 // Crear el contexto
 const UserRoleContext = createContext();
@@ -45,41 +46,16 @@ export const UserRoleProvider = ({ children }) => {
 				return;
 			}
 
-			console.log(`🚀 Haciendo petición a: /api/Usuario/GetUsuarioPorId/${userId}`);
+			console.log(`🚀 Haciendo petición a: Usuario/GetUsuarioPorId/${userId}`);
 
-			const response = await fetch(`http://localhost:5276/api/Usuario/GetUsuarioPorId/${userId}`, {
-				method: 'GET',
-				headers: {
-					'Accept': 'application/json',
-					'Authorization': `Bearer ${token}`,
-				},
-			});
+			const response = await api.get(`Usuario/GetUsuarioPorId/${userId}`);
 
 			console.log('📡 Respuesta del servidor:', {
-				status: response.status,
-				statusText: response.statusText,
-				ok: response.ok
+				data: response.data,
+				status: response.status
 			});
 
-			// Verificar si el token expiró
-			if (response.status === 401) {
-				console.error('❌ Token expirado - 401 Unauthorized');
-				authUtils.logout();
-				window.location.href = '/login';
-				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
-			}
-
-			if (!response.ok) {
-				const errorText = await response.text();
-				console.error('❌ Error en la respuesta:', {
-					status: response.status,
-					statusText: response.statusText,
-					body: errorText
-				});
-				throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-			}
-
-			const userData = await response.json();
+			const userData = response.data;
 			console.log('✅ Datos del usuario obtenidos:', {
 				usuarioId: userData.usuarioId,
 				nombre: userData.nombre,
@@ -110,7 +86,18 @@ export const UserRoleProvider = ({ children }) => {
 
 		} catch (error) {
 			console.error('❌ Error fetching user role:', error);
-			setError(error.message);
+			
+			// Manejo específico de errores de API
+			let errorMessage = 'Error al obtener datos del usuario';
+			if (error.response?.data?.mensaje) {
+				errorMessage = error.response.data.mensaje;
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.message) {
+				errorMessage = error.message;
+			}
+			
+			setError(errorMessage);
 			setUserRole(null);
 			setUserPermissions({});
 			setCurrentUser(null);
