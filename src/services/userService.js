@@ -1,172 +1,199 @@
 import { authUtils } from '../utils/authUtils';
-
-const API_BASE_URL = "http://localhost:5276/api/Usuario";
-
-// Función helper para obtener headers con autorización
-const getAuthHeaders = (contentType = null) => {
-	const token = authUtils.getToken();
-	const headers = {
-		"Accept": "application/json",
-	};
-
-	if (contentType) {
-		headers["Content-Type"] = contentType;
-	}
-
-	if (token) {
-		headers["Authorization"] = `Bearer ${token}`;
-	}
-
-	return headers;
-};
-
-// Función helper para manejar respuestas de error de autenticación
-const handleAuthError = (response) => {
-	if (response.status === 401) {
-		authUtils.logout();
-		window.location.href = '/login';
-		throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
-	}
-};
+import api from '../services/apiConfig';
 
 export const userService = {
 	// Obtener todos los usuarios
 	async getAllUsers() {
 		try {
-			const response = await fetch(`${API_BASE_URL}/GetTodosLosUsuarios`, {
-				method: "GET",
-				headers: getAuthHeaders(),
-			});
-
-			handleAuthError(response);
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
 			}
 
-			return await response.json();
+			const response = await api.get('Usuario/GetTodosLosUsuarios');
+			return response.data;
 		} catch (error) {
 			console.error("Error fetching users:", error);
-			if (error.message.includes('Sesión expirada')) {
+			if (error.response?.status === 401 || error.message.includes('Sesión expirada')) {
 				throw error;
 			}
-			throw new Error("Error al cargar los usuarios. Verifique la conexión con el servidor.");
+			throw new Error(error.response?.data?.message || "Error al cargar los usuarios. Verifique la conexión con el servidor.");
 		}
 	},
 
 	// Crear nuevo usuario
 	async createUser(userData) {
 		try {
-			const response = await fetch(`${API_BASE_URL}/AddUsuario`, {
-				method: "POST",
-				headers: getAuthHeaders("application/json"),
-				body: JSON.stringify(userData),
-			});
-
-			handleAuthError(response);
-
-			const data = await response.json();
-
-			if (!response.ok) {
-				throw new Error(data.mensaje || "Error al crear usuario");
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
 			}
 
-			return data;
+			const response = await api.post('Usuario/AddUsuario', userData);
+			return response.data;
 		} catch (error) {
 			console.error("Error creating user:", error);
-			if (error.message.includes('Sesión expirada')) {
+			if (error.response?.status === 401 || error.message.includes('Sesión expirada')) {
 				throw error;
 			}
-			if (error.message.includes("Failed to fetch")) {
-				throw new Error("Error de conexión. Intente nuevamente.");
+			
+			let errorMessage = "Error al crear usuario";
+			if (error.response?.data?.mensaje) {
+				errorMessage = error.response.data.mensaje;
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.message && !error.message.includes("Failed to fetch")) {
+				errorMessage = error.message;
+			} else if (error.message?.includes("Failed to fetch")) {
+				errorMessage = "Error de conexión. Intente nuevamente.";
 			}
-			throw error;
+			
+			throw new Error(errorMessage);
 		}
 	},
 
 	// Actualizar usuario
 	async updateUser(userId, userData) {
 		try {
-			const response = await fetch(`${API_BASE_URL}/UpdateUsuario/${userId}`, {
-				method: "PUT",
-				headers: getAuthHeaders("application/json"),
-				body: JSON.stringify(userData),
-			});
-
-			handleAuthError(response);
-
-			const data = await response.json();
-
-			if (!response.ok) {
-				throw new Error(data.mensaje || "Error al actualizar usuario");
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
 			}
 
-			return data;
+			const response = await api.put(`Usuario/UpdateUsuario/${userId}`, userData);
+			
+			// Manejar respuesta basada en el status code
+			if (response.status === 204) {
+				console.log('Usuario actualizado exitosamente (204 No Content)');
+				return { success: true, data: userData };
+			}
+			
+			return response.data;
 		} catch (error) {
 			console.error("Error updating user:", error);
-			if (error.message.includes('Sesión expirada')) {
+			if (error.response?.status === 401 || error.message.includes('Sesión expirada')) {
 				throw error;
 			}
-			if (error.message.includes("Failed to fetch")) {
-				throw new Error("Error de conexión. Intente nuevamente.");
+			
+			let errorMessage = "Error al actualizar usuario";
+			if (error.response?.data?.mensaje) {
+				errorMessage = error.response.data.mensaje;
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.message && !error.message.includes("Failed to fetch")) {
+				errorMessage = error.message;
+			} else if (error.message?.includes("Failed to fetch")) {
+				errorMessage = "Error de conexión. Intente nuevamente.";
 			}
-			throw error;
+			
+			throw new Error(errorMessage);
 		}
 	},
 
 	// Eliminar usuario
 	async deleteUser(userId) {
 		try {
-			const response = await fetch(`${API_BASE_URL}/DeleteUsuario/${userId}`, {
-				method: "DELETE",
-				headers: getAuthHeaders(),
-			});
-
-			handleAuthError(response);
-
-			if (!response.ok) {
-				const data = await response.json();
-				throw new Error(data.mensaje || "Error al eliminar usuario");
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
 			}
 
-			return { success: true };
+			const response = await api.delete(`Usuario/DeleteUsuario/${userId}`);
+			
+			// Manejar respuesta basada en el status code
+			if (response.status === 204) {
+				console.log('Usuario eliminado exitosamente (204 No Content)');
+				return { success: true };
+			}
+			
+			return response.data || { success: true };
 		} catch (error) {
 			console.error("Error deleting user:", error);
-			if (error.message.includes('Sesión expirada')) {
+			if (error.response?.status === 401 || error.message.includes('Sesión expirada')) {
 				throw error;
 			}
-			if (error.message.includes("Failed to fetch")) {
-				throw new Error("Error de conexión. Intente nuevamente.");
+			
+			let errorMessage = "Error al eliminar usuario";
+			if (error.response?.data?.mensaje) {
+				errorMessage = error.response.data.mensaje;
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.message && !error.message.includes("Failed to fetch")) {
+				errorMessage = error.message;
+			} else if (error.message?.includes("Failed to fetch")) {
+				errorMessage = "Error de conexión. Intente nuevamente.";
 			}
-			throw error;
+			
+			throw new Error(errorMessage);
 		}
 	},
 
 	// Activar/desactivar usuario
 	async toggleUserStatus(userId, isActive) {
 		try {
-			const response = await fetch(`${API_BASE_URL}/ToggleUserStatus/${userId}`, {
-				method: "PATCH",
-				headers: getAuthHeaders("application/json"),
-				body: JSON.stringify({ activo: isActive }),
-			});
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
+			}
 
-			handleAuthError(response);
+			const response = await api.patch(`Usuario/ToggleUserStatus/${userId}`, { 
+				activo: isActive 
+			});
+			
+			// Manejar respuesta basada en el status code
+			if (response.status === 204) {
+				console.log('Estado del usuario actualizado exitosamente (204 No Content)');
+				return { success: true, activo: isActive };
+			}
+			
+			return response.data;
+		} catch (error) {
+			console.error("Error toggling user status:", error);
+			if (error.response?.status === 401 || error.message.includes('Sesión expirada')) {
+				throw error;
+			}
+			
+			let errorMessage = "Error al cambiar estado del usuario";
+			if (error.response?.data?.mensaje) {
+				errorMessage = error.response.data.mensaje;
+			} else if (error.response?.data?.message) {
+				errorMessage = error.response.data.message;
+			} else if (error.message && !error.message.includes("Failed to fetch")) {
+				errorMessage = error.message;
+			} else if (error.message?.includes("Failed to fetch")) {
+				errorMessage = "Error de conexión. Intente nuevamente.";
+			}
+			
+			throw new Error(errorMessage);
+		}
+	},
+
+	// Login de usuario (mantiene fetch manual como solicitaste)
+	async loginUser(correo, contrasena) {
+		try {
+			const response = await fetch('http://localhost:5276/api/Usuario/Login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Accept': 'application/json',
+				},
+				body: JSON.stringify({
+					correo,
+					contrasena
+				}),
+			});
 
 			const data = await response.json();
 
 			if (!response.ok) {
-				throw new Error(data.mensaje || "Error al cambiar estado del usuario");
+				throw new Error(data.mensaje || 'Error en el login');
 			}
 
 			return data;
 		} catch (error) {
-			console.error("Error toggling user status:", error);
-			if (error.message.includes('Sesión expirada')) {
-				throw error;
-			}
+			console.error("Error in login:", error);
 			if (error.message.includes("Failed to fetch")) {
-				throw new Error("Error de conexión. Intente nuevamente.");
+				throw new Error("Error de conexión. Verifique que el servidor esté activo.");
 			}
 			throw error;
 		}

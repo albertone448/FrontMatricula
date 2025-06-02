@@ -444,22 +444,7 @@ const VerifyCodePage = () => {
 							{/* Opciones adicionales */}
 							<div className="text-center space-y-4">
 								{/* Reenviar código */}
-								<div>
-									<p className="text-gray-400 text-sm mb-2">¿No recibiste el código?</p>
-									<button
-										type="button"
-										onClick={handleResendCode}
-										disabled={resendLoading}
-										className="text-purple-400 hover:text-purple-300 font-medium transition duration-200 flex items-center justify-center mx-auto disabled:cursor-not-allowed disabled:opacity-50"
-									>
-										{resendLoading ? (
-											<div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin mr-2" />
-										) : (
-											<RefreshCw className="w-4 h-4 mr-2" />
-										)}
-										Reenviar código
-									</button>
-								</div>
+								
 
 								{/* Cambiar email */}
 								<div>
