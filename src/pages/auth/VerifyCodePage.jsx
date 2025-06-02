@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Shield, Mail, RefreshCw, CheckCircle, User, AlertCircle } from "lucide-react";
+import { authUtils } from "../../utils/authUtils";
 
 const VerifyCodePage = () => {
 	const [code, setCode] = useState("");
@@ -48,17 +49,43 @@ const VerifyCodePage = () => {
 		}
 
 		try {
+			// Preparar headers - incluir token si está disponible
+			const headers = {
+				"Accept": "application/json",
+			};
+
+			// Agregar token si el usuario está logueado (opcional para esta operación)
+			const token = authUtils.getToken();
+			if (token) {
+				headers["Authorization"] = `Bearer ${token}`;
+			}
+
+			console.log('🔍 Buscando usuario por email:', email);
+
 			// Buscar usuario por email para obtener el ID
 			const response = await fetch("http://localhost:5276/api/Usuario/GetTodosLosUsuarios", {
 				method: "GET",
-				headers: {
-					"Accept": "application/json",
-				},
+				headers: headers,
 			});
+
+			console.log('📡 Respuesta GetTodosLosUsuarios:', {
+				status: response.status,
+				ok: response.ok
+			});
+
+			// Verificar si es error de autenticación (401)
+			if (response.status === 401) {
+				// En este caso no es crítico porque es verificación de cuenta
+				// Pero podríamos limpiar localStorage por si hay datos corruptos
+				console.log('⚠️ Token inválido o expirado al buscar usuarios, continuando sin autenticación');
+				authUtils.logout();
+			}
 
 			if (response.ok) {
 				const users = await response.json();
 				const user = users.find(u => u.correo.toLowerCase() === email.toLowerCase());
+				
+				console.log('👤 Usuario encontrado:', user ? 'Sí' : 'No');
 				
 				if (user) {
 					if (user.activo) {
@@ -75,6 +102,12 @@ const VerifyCodePage = () => {
 					setError("No se encontró una cuenta con este correo electrónico.");
 				}
 			} else {
+				const errorText = await response.text();
+				console.error('❌ Error en GetTodosLosUsuarios:', {
+					status: response.status,
+					statusText: response.statusText,
+					body: errorText
+				});
 				setError("Error al verificar el correo. Intente nuevamente.");
 			}
 		} catch (error) {
@@ -104,10 +137,14 @@ const VerifyCodePage = () => {
 		}
 
 		try {
+			console.log('🔐 Verificando código para usuario:', currentUserId);
+
+			// Este endpoint NO requiere token de autorización
 			const response = await fetch("http://localhost:5276/api/Usuario/VerificarUsuario", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
+					"Accept": "application/json",
 				},
 				body: JSON.stringify({
 					usuarioId: parseInt(currentUserId),
@@ -115,13 +152,21 @@ const VerifyCodePage = () => {
 				}),
 			});
 
+			console.log('📡 Respuesta VerificarUsuario:', {
+				status: response.status,
+				ok: response.ok
+			});
+
 			const data = await response.json();
+			console.log('📄 Datos de respuesta:', data);
 
 			if (response.ok && data.estado === 1) {
 				setSuccess(true);
 				// Limpiar datos temporales
 				localStorage.removeItem("pendingUserId");
 				localStorage.removeItem("userEmail");
+				
+				console.log('✅ Verificación exitosa, redirigiendo al login...');
 				
 				// Esperar un momento para mostrar el mensaje de éxito y redirigir
 				setTimeout(() => {
@@ -146,19 +191,58 @@ const VerifyCodePage = () => {
 		setResendLoading(true);
 		setError("");
 
-		// Aquí deberías implementar el endpoint para reenviar código
-		// Por ahora simularemos la acción
 		try {
+			console.log('🔄 Reenviando código de verificación...');
+
+			const currentUserId = userId || localStorage.getItem("pendingUserId");
+			if (!currentUserId) {
+				setError("No se encontró información del usuario para reenviar el código.");
+				setResendLoading(false);
+				return;
+			}
+
+			// Aquí implementarías el endpoint real para reenviar código
+			// Por ejemplo: /api/Usuario/ReenviarCodigoVerificacion
+			// Por ahora simularemos la acción ya que no tienes ese endpoint
+
 			// Simular delay de API
 			await new Promise(resolve => setTimeout(resolve, 1500));
 			
-			// En un caso real, llamarías a un endpoint de reenvío
+			// Simular respuesta exitosa
+			console.log('✅ Código reenviado (simulado)');
 			setError(""); // Limpiar errores
+			
 			// Mostrar mensaje de éxito temporal
-			setError("Código reenviado exitosamente");
-			setTimeout(() => setError(""), 3000);
+			const successMsg = `Código reenviado exitosamente a ${email}`;
+			setError(successMsg);
+			setTimeout(() => setError(""), 4000);
+
+			// En un caso real, llamarías algo como:
+			/*
+			const response = await fetch("http://localhost:5276/api/Usuario/ReenviarCodigoVerificacion", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					"Accept": "application/json",
+				},
+				body: JSON.stringify({
+					usuarioId: parseInt(currentUserId),
+					correo: email
+				}),
+			});
+
+			const data = await response.json();
+			if (response.ok && data.estado === 1) {
+				setError("Código reenviado exitosamente");
+				setTimeout(() => setError(""), 3000);
+			} else {
+				setError(data.mensaje || "Error al reenviar el código");
+			}
+			*/
+
 		} catch (error) {
 			setError("Error al reenviar el código");
+			console.error("Error reenviando código:", error);
 		} finally {
 			setResendLoading(false);
 		}

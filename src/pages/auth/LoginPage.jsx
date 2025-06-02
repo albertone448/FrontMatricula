@@ -279,18 +279,6 @@ const LoginPage = () => {
 							)}
 						</motion.button>
 					</form>
-
-					{/* Info administrativa */}
-					<div className="mt-8 text-center">
-						<div className="bg-gray-700 bg-opacity-50 rounded-lg p-4">
-							<p className="text-gray-400 text-sm">
-								<strong>Sistema de Gestión Académica</strong>
-							</p>
-							<p className="text-gray-500 text-xs mt-1">
-								Si no tienes cuenta, contacta al administrador del sistema
-							</p>
-						</div>
-					</div>
 				</div>
 			</motion.div>
 		</div>
