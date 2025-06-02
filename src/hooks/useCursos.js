@@ -74,7 +74,7 @@ const getCursoById = useCallback(async (cursoId) => {
 				body: JSON.stringify(cursoData)
                
 			});
-            alert("Curso Data:", JSON.stringify(cursoData))
+            
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -90,36 +90,51 @@ const getCursoById = useCallback(async (cursoId) => {
 			setLoading(false);
 		}
 	}, []);
+	
+	
+		const updateCurso = useCallback(async (cursoData) => {
+	setLoading(true);
+	setError("");
+	
+	try {
+		console.log('Actualizando curso:', {cursoData});
+		const response = await fetch(`http://localhost:5276/api/Curso/UpdateCurso`, {
+			method: "PUT",				
+			headers: {
+				"Content-Type": "application/json",
+				"Accept": "application/json"
+			},
+			body: JSON.stringify(cursoData)
+		});
 
-	const updateCurso = useCallback(async (cursoId, cursoData) => {
-		setLoading(true);
-		setError("");
-		
-		try {
-			const response = await fetch(`http://localhost:5276/api/Curso/UpdateCurso/${cursoId}`, {
-				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-					"Accept": "application/json"
-				},
-				body: JSON.stringify(cursoData)
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-
-			const updatedCurso = await response.json();
-			setCursos(prev => prev.map(c => c.cursoId === cursoId ? updatedCurso : c));
-			return updatedCurso;
-		} catch (error) {
-			console.error("Error updating curso:", error);
-			setError(error.message);
-			throw error;
-		} finally {
-			setLoading(false);
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
 		}
-	}, []);
+
+		// Manejar respuesta basada en el status code
+		let updatedCurso = null;
+		
+		if (response.status === 204) {
+			// Status 204 (No Content) - actualización exitosa sin contenido
+			console.log('Curso actualizado exitosamente (204 No Content)');
+			updatedCurso = cursoData; // Retornar los datos enviados
+		} else {
+			// Otros códigos de éxito (200, 201, etc.) con contenido JSON
+			updatedCurso = await response.json();
+		}
+
+		// Actualizar la lista de cursos con el curso actualizado
+		await fetchCursos(); // Recargar todos los cursos para asegurar datos frescos
+		return updatedCurso;
+		
+	} catch (error) {
+		console.error("Error updating curso:", error);
+		setError(error.message);
+		throw error;
+	} finally {
+		setLoading(false);
+	}
+}, []);
 
 	const deleteCurso = useCallback(async (cursoId) => {
 		setLoading(true);
