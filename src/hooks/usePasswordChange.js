@@ -12,11 +12,16 @@ export const usePasswordChange = () => {
 		setSuccess(false);
 
 		try {
-			// Obtener ID del usuario actual
+			// Obtener ID del usuario actual y token
 			const usuarioId = authUtils.getUserId();
+			const token = authUtils.getToken();
 			
 			if (!usuarioId) {
 				throw new Error('No se encontró información del usuario');
+			}
+
+			if (!token) {
+				throw new Error('Token de autenticación no encontrado');
 			}
 
 			console.log('Enviando cambio de contraseña para usuario:', usuarioId);
@@ -26,6 +31,7 @@ export const usePasswordChange = () => {
 				headers: {
 					'Content-Type': 'application/json',
 					'Accept': '*/*',
+					'Authorization': `Bearer ${token}`,
 				},
 				body: JSON.stringify({
 					usuarioId: usuarioId,
@@ -33,6 +39,12 @@ export const usePasswordChange = () => {
 					contrasenaNueva: contrasenaNueva
 				}),
 			});
+
+			// Verificar si el token expiró
+			if (response.status === 401) {
+				authUtils.logout();
+				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+			}
 
 			const data = await response.json();
 			console.log('Respuesta del servidor:', data);

@@ -1,4 +1,33 @@
+import { authUtils } from '../utils/authUtils';
+
 const API_BASE_URL = "http://localhost:5276/api/Usuario";
+
+// Función helper para obtener headers con autorización
+const getAuthHeaders = (contentType = null) => {
+	const token = authUtils.getToken();
+	const headers = {
+		"Accept": "application/json",
+	};
+
+	if (contentType) {
+		headers["Content-Type"] = contentType;
+	}
+
+	if (token) {
+		headers["Authorization"] = `Bearer ${token}`;
+	}
+
+	return headers;
+};
+
+// Función helper para manejar respuestas de error de autenticación
+const handleAuthError = (response) => {
+	if (response.status === 401) {
+		authUtils.logout();
+		window.location.href = '/login';
+		throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+	}
+};
 
 export const userService = {
 	// Obtener todos los usuarios
@@ -6,10 +35,10 @@ export const userService = {
 		try {
 			const response = await fetch(`${API_BASE_URL}/GetTodosLosUsuarios`, {
 				method: "GET",
-				headers: {
-					"Accept": "application/json",
-				},
+				headers: getAuthHeaders(),
 			});
+
+			handleAuthError(response);
 
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
@@ -18,6 +47,9 @@ export const userService = {
 			return await response.json();
 		} catch (error) {
 			console.error("Error fetching users:", error);
+			if (error.message.includes('Sesión expirada')) {
+				throw error;
+			}
 			throw new Error("Error al cargar los usuarios. Verifique la conexión con el servidor.");
 		}
 	},
@@ -27,11 +59,11 @@ export const userService = {
 		try {
 			const response = await fetch(`${API_BASE_URL}/AddUsuario`, {
 				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: getAuthHeaders("application/json"),
 				body: JSON.stringify(userData),
 			});
+
+			handleAuthError(response);
 
 			const data = await response.json();
 
@@ -42,6 +74,9 @@ export const userService = {
 			return data;
 		} catch (error) {
 			console.error("Error creating user:", error);
+			if (error.message.includes('Sesión expirada')) {
+				throw error;
+			}
 			if (error.message.includes("Failed to fetch")) {
 				throw new Error("Error de conexión. Intente nuevamente.");
 			}
@@ -54,11 +89,11 @@ export const userService = {
 		try {
 			const response = await fetch(`${API_BASE_URL}/UpdateUsuario/${userId}`, {
 				method: "PUT",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: getAuthHeaders("application/json"),
 				body: JSON.stringify(userData),
 			});
+
+			handleAuthError(response);
 
 			const data = await response.json();
 
@@ -69,6 +104,9 @@ export const userService = {
 			return data;
 		} catch (error) {
 			console.error("Error updating user:", error);
+			if (error.message.includes('Sesión expirada')) {
+				throw error;
+			}
 			if (error.message.includes("Failed to fetch")) {
 				throw new Error("Error de conexión. Intente nuevamente.");
 			}
@@ -81,10 +119,10 @@ export const userService = {
 		try {
 			const response = await fetch(`${API_BASE_URL}/DeleteUsuario/${userId}`, {
 				method: "DELETE",
-				headers: {
-					"Accept": "application/json",
-				},
+				headers: getAuthHeaders(),
 			});
+
+			handleAuthError(response);
 
 			if (!response.ok) {
 				const data = await response.json();
@@ -94,6 +132,9 @@ export const userService = {
 			return { success: true };
 		} catch (error) {
 			console.error("Error deleting user:", error);
+			if (error.message.includes('Sesión expirada')) {
+				throw error;
+			}
 			if (error.message.includes("Failed to fetch")) {
 				throw new Error("Error de conexión. Intente nuevamente.");
 			}
@@ -106,11 +147,11 @@ export const userService = {
 		try {
 			const response = await fetch(`${API_BASE_URL}/ToggleUserStatus/${userId}`, {
 				method: "PATCH",
-				headers: {
-					"Content-Type": "application/json",
-				},
+				headers: getAuthHeaders("application/json"),
 				body: JSON.stringify({ activo: isActive }),
 			});
+
+			handleAuthError(response);
 
 			const data = await response.json();
 
@@ -121,6 +162,9 @@ export const userService = {
 			return data;
 		} catch (error) {
 			console.error("Error toggling user status:", error);
+			if (error.message.includes('Sesión expirada')) {
+				throw error;
+			}
 			if (error.message.includes("Failed to fetch")) {
 				throw new Error("Error de conexión. Intente nuevamente.");
 			}

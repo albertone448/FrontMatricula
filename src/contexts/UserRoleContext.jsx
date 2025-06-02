@@ -19,8 +19,16 @@ export const UserRoleProvider = ({ children }) => {
 
 		try {
 			const userId = authUtils.getUserId();
+			const token = authUtils.getToken();
+			
+			console.log('🔍 Verificando datos de autenticación:', {
+				userId: userId,
+				hasToken: !!token,
+				tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token'
+			});
 			
 			if (!userId) {
+				console.error('❌ No se encontró userId en localStorage');
 				setUserRole(null);
 				setUserPermissions({});
 				setCurrentUser(null);
@@ -28,18 +36,56 @@ export const UserRoleProvider = ({ children }) => {
 				return;
 			}
 
+			if (!token) {
+				console.error('❌ No se encontró token en localStorage');
+				setUserRole(null);
+				setUserPermissions({});
+				setCurrentUser(null);
+				setLoading(false);
+				return;
+			}
+
+			console.log(`🚀 Haciendo petición a: /api/Usuario/GetUsuarioPorId/${userId}`);
+
 			const response = await fetch(`http://localhost:5276/api/Usuario/GetUsuarioPorId/${userId}`, {
 				method: 'GET',
 				headers: {
 					'Accept': 'application/json',
+					'Authorization': `Bearer ${token}`,
 				},
 			});
 
+			console.log('📡 Respuesta del servidor:', {
+				status: response.status,
+				statusText: response.statusText,
+				ok: response.ok
+			});
+
+			// Verificar si el token expiró
+			if (response.status === 401) {
+				console.error('❌ Token expirado - 401 Unauthorized');
+				authUtils.logout();
+				window.location.href = '/login';
+				throw new Error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+			}
+
 			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+				const errorText = await response.text();
+				console.error('❌ Error en la respuesta:', {
+					status: response.status,
+					statusText: response.statusText,
+					body: errorText
+				});
+				throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
 			}
 
 			const userData = await response.json();
+			console.log('✅ Datos del usuario obtenidos:', {
+				usuarioId: userData.usuarioId,
+				nombre: userData.nombre,
+				rol: userData.rol,
+				correo: userData.correo
+			});
 			
 			// Actualizar el estado
 			setCurrentUser(userData);
@@ -49,11 +95,21 @@ export const UserRoleProvider = ({ children }) => {
 			const permissions = calculatePermissions(userData.rol);
 			setUserPermissions(permissions);
 
-			// Actualizar localStorage con datos frescos del servidor
-			localStorage.setItem("usuario", JSON.stringify(userData));
+			console.log('✅ Permisos calculados para rol', userData.rol, ':', permissions);
+
+			// Actualizar localStorage con solo los datos necesarios
+			const limitedUserData = {
+				usuarioId: userData.usuarioId,
+				nombre: userData.nombre,
+				apellido1: userData.apellido1,
+				carrera: userData.carrera,
+				identificacion: userData.identificacion,
+				correo: userData.correo
+			};
+			localStorage.setItem("usuario", JSON.stringify(limitedUserData));
 
 		} catch (error) {
-			console.error('Error fetching user role:', error);
+			console.error('❌ Error fetching user role:', error);
 			setError(error.message);
 			setUserRole(null);
 			setUserPermissions({});
@@ -132,7 +188,32 @@ export const UserRoleProvider = ({ children }) => {
 
 	// Efecto para cargar el rol al montar el componente
 	useEffect(() => {
-		fetchUserRole();
+		console.log('🎯 UserRoleContext useEffect ejecutándose');
+		
+		// Verificar estado de autenticación
+		const isAuthenticated = authUtils.isAuthenticated();
+		const isSessionValid = authUtils.isSessionValid();
+		const userId = authUtils.getUserId();
+		const token = authUtils.getToken();
+		
+		console.log('🔐 Estado de autenticación:', {
+			isAuthenticated,
+			isSessionValid,
+			userId,
+			hasToken: !!token
+		});
+
+		// Si tenemos userId y token, intentar cargar independientemente de isSessionValid
+		if (userId && token) {
+			console.log('✅ Tenemos userId y token, cargando datos del usuario...');
+			fetchUserRole();
+		} else if (userId) {
+			console.log('⚠️ Tenemos userId pero no token, intentando de todas formas...');
+			fetchUserRole();
+		} else {
+			console.log('❌ No hay userId, no se cargarán datos');
+			setLoading(false);
+		}
 	}, []);
 
 	// Valor del contexto
