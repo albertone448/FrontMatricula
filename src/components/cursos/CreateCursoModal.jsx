@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2 } from "lucide-react";
 
-const CreateCursoModal = ({ isOpen, onClose, onSuccess, cursoToEdit = null }) => {
-	const [formData, setFormData] = useState({
+
+const CreateCursoModal = ({ isOpen, onClose, onSuccess, cursoToEdit = null, createCurso, updateCurso }) => {	const [formData, setFormData] = useState({
+		cursoId: 0,
 		codigo: "",
 		nombre: "",
 		creditos: "",
@@ -15,44 +16,48 @@ const CreateCursoModal = ({ isOpen, onClose, onSuccess, cursoToEdit = null }) =>
 	const [validationErrors, setValidationErrors] = useState({});
 
 	// Si hay un curso para editar, llenar el formulario
-	useEffect(() => {
-		if (cursoToEdit) {
-			setFormData({
-				codigo: cursoToEdit.codigo || "",
-				nombre: cursoToEdit.nombre || "",
-				creditos: cursoToEdit.creditos || "",
-				descripcion: cursoToEdit.descripcion || ""
-			});
-		} else {
-			// Resetear el formulario si no hay curso para editar
-			setFormData({
-				codigo: "",
-				nombre: "",
-				creditos: "",
-				descripcion: ""
-			});
-		}
-	}, [cursoToEdit]);
+useEffect(() => {    if (cursoToEdit) {
+        setFormData({
+            cursoId: cursoToEdit.cursoId || 0,
+            codigo: cursoToEdit.codigo || "",
+            nombre: cursoToEdit.nombre || "",
+            creditos: cursoToEdit.creditos?.toString() || "", // ✅ Convertir a string para el select
+            descripcion: cursoToEdit.descripcion || ""
+        });
+    } else {        // Resetear el formulario si no hay curso para editar
+        setFormData({
+            cursoId: 0,
+            codigo: "",
+            nombre: "",
+            creditos: "",
+            descripcion: ""
+        });
+    }
+    // ✅ Limpiar errores cuando cambia el curso a editar
+    setValidationErrors({});
+    setError("");
+}, [cursoToEdit]);
 
 	const validateForm = () => {
-		const errors = {};
-		
-		if (!formData.codigo.trim()) {
-			errors.codigo = "El código es requerido";
-		}
-		
-		if (!formData.nombre.trim()) {
-			errors.nombre = "El nombre es requerido";
-		}
-		
-		if (!formData.creditos || formData.creditos < 1) {
-			errors.creditos = "Los créditos deben ser un número mayor a 0";
-		}
+    const errors = {};
+    
+    if (!formData.codigo.trim()) {
+        errors.codigo = "El código es requerido";
+    }
+    
+    if (!formData.nombre.trim()) {
+        errors.nombre = "El nombre es requerido";
+    }
+    
+    // ✅ Validación mejorada para créditos
+    const creditos = parseInt(formData.creditos);
+    if (!formData.creditos || isNaN(creditos) || creditos < 1) {
+        errors.creditos = "Los créditos deben ser un número mayor a 0";
+    }
 
-		setValidationErrors(errors);
-		return Object.keys(errors).length === 0;
-	};
-
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+};
 	const handleChange = (e) => {
 		const { name, value } = e.target;
 		setFormData(prev => ({
@@ -70,33 +75,26 @@ const CreateCursoModal = ({ isOpen, onClose, onSuccess, cursoToEdit = null }) =>
 		if (!validateForm()) return;
 
 		setLoading(true);
-		setError("");
-
-		try {
-            const response = cursoToEdit
-                ? await fetch(`http://localhost:5276/api/Curso/UpdateCurso/${cursoToEdit.cursoId}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
-                    body: JSON.stringify(formData)
-                })
-                : await fetch("http://localhost:5276/api/Curso/AddCurso", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json"
-                    },
-                    body: JSON.stringify(formData)
-                });
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+		setError("");				try {
+			const dataToSend = {
+				...formData,
+				cursoId: cursoToEdit ? cursoToEdit.cursoId : 0,
+				creditos: parseInt(formData.creditos)
+			};
+			
+			console.log('Datos a enviar:', dataToSend);
+			
+			if (cursoToEdit) {
+				await updateCurso(dataToSend);
+			} else {
+				await createCurso(dataToSend);
+			}
+			
 			const message = cursoToEdit ? "Curso actualizado exitosamente" : "Curso creado exitosamente";
 			onSuccess(message);
 			onClose();
 		} catch (err) {
+			console.error('Error:', err);
 			setError(err.message || "Ha ocurrido un error");
 		} finally {
 			setLoading(false);
@@ -169,17 +167,28 @@ const CreateCursoModal = ({ isOpen, onClose, onSuccess, cursoToEdit = null }) =>
 						<label className="block text-gray-300 text-sm font-medium mb-2">
 							Créditos
 						</label>
-						<input
-							type="number"
+						<select
+						
 							name="creditos"
 							value={formData.creditos}
 							onChange={handleChange}
-							min="1"
-							className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						/>
+							className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+							<option value="" disabled>Seleccione créditos</option>
+							{[3, 4, 5, 6, 7, 8, 9].map((credito) => (
+								<option key={credito} value={credito}>
+									{credito} Crédito{credito > 1 ? "s" : ""}
+								</option>
+							))}
+							
+						</select>
+
+							
+						
+						
 						{validationErrors.creditos && (
 							<p className="mt-1 text-sm text-red-400">{validationErrors.creditos}</p>
 						)}
+						
 					</div>
 
 					

@@ -90,29 +90,30 @@ const CursosTable = ({ cursos = [], loading, searchTerm, onSearchChange, onEditC
 							)}
 						</tr>
 					</thead>
-					<tbody className="divide-y divide-gray-700">
-						{currentCursos.map((curso) => (
-							<motion.tr
-								key={curso.cursoId}
+					<tbody className="divide-y divide-gray-700">						{currentCursos.map((curso) => (							<motion.tr								key={curso.cursoId}
 								layout
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								exit={{ opacity: 0 }}
 								className="hover:bg-gray-700 hover:bg-opacity-30 transition-colors duration-200"
-							>                                <td className="px-6 py-4 whitespace-nowrap text-gray-100">{curso.codigo}</td>
+							>
+								<td className="px-6 py-4 whitespace-nowrap text-gray-100">{curso.codigo}</td>
 								<td className="px-6 py-4 whitespace-nowrap text-gray-100">{curso.nombre}</td>
-								<td className="px-6 py-4 whitespace-nowrap text-gray-300">{curso.creditos}</td>								{userPermissions.canManageCourses && (
+								<td className="px-6 py-4 whitespace-nowrap text-gray-300">{curso.creditos}</td>
+								{userPermissions.canManageCourses && (
 									<td className="px-6 py-4 whitespace-nowrap text-sm">
 										<div className="flex items-center space-x-3">
 											<button
 												onClick={() => onEditCurso(curso)}
 												className="text-indigo-400 hover:text-indigo-300 p-1 rounded hover:bg-indigo-400 hover:bg-opacity-20 transition-colors"
+												title="Editar curso"
 											>
 												<Edit className="w-4 h-4" />
 											</button>
 											<button
 												onClick={() => onDeleteCurso(curso)}
 												className="text-red-400 hover:text-red-300 p-1 rounded hover:bg-red-400 hover:bg-opacity-20 transition-colors"
+												title="Eliminar curso"
 											>
 												<Trash2 className="w-4 h-4" />
 											</button>
