@@ -5,9 +5,9 @@ import { X, Loader2 } from "lucide-react";
 const CreateSeccionModal = ({ isOpen, onClose, onSuccess, seccionToEdit = null, createSeccion, updateSeccion }) => {
     const [formData, setFormData] = useState({
         seccionId: 0,
-        usuarioId: "",
-        cursoId: "",
-        horarioId: "",
+        usuarioId: 0, // Changed: Initialize as number
+        cursoId: 0,   // Changed: Initialize as number
+        horarioId: 0, // Changed: Initialize as number
         grupo : "",
         periodo : "",
         carrera: "",
@@ -53,16 +53,17 @@ const CreateSeccionModal = ({ isOpen, onClose, onSuccess, seccionToEdit = null, 
     const validateForm = () => {
         const errors = {};
 
-        if (!formData.usuarioId.trim()) {
-            errors.usuarioId = "El usuario es requerido";
+        // Updated validation for numeric IDs
+        if (!formData.usuarioId || formData.usuarioId === 0) {
+            errors.usuarioId = "El ID de usuario es requerido";
         }
 
-        if (!formData.cursoId.trim()) {
-            errors.cursoId = "El curso es requerido";
+        if (!formData.cursoId || formData.cursoId === 0) {
+            errors.cursoId = "El ID de curso es requerido";
         }
 
-        if (!formData.horarioId.trim()) {
-            errors.horarioId = "El horario es requerido";
+        if (!formData.horarioId || formData.horarioId === 0) {
+            errors.horarioId = "El ID de horario es requerido";
         }
 
         if (!formData.grupo.trim()) {
@@ -77,8 +78,8 @@ const CreateSeccionModal = ({ isOpen, onClose, onSuccess, seccionToEdit = null, 
             errors.carrera = "La carrera es requerida";
         }
 
-        if (!formData.cuposMax || formData.cuposMax <= 0) {
-            errors.cuposMax = "Los cupos deben ser mayor a 0";
+        if (formData.cuposMax === undefined || formData.cuposMax === null || formData.cuposMax <= 0) {
+            errors.cuposMax = "Los cupos deben ser un número mayor a 0";
         }
         
         setValidationErrors(errors);
@@ -143,7 +144,7 @@ return (
 				{/* Header */}
 				<div className="flex justify-between items-center mb-6">
 					<h2 className="text-2xl font-bold text-gray-100">
-						{cursoToEdit ? "Editar Curso" : "Crear Nuevo Curso"}
+						{seccionToEdit ? "Editar Sección" : "Crear Nueva Sección"}
 					</h2>
 					<button
 						onClick={onClose}
@@ -154,117 +155,166 @@ return (
 				</div>
 
 				{/* Formulario */}
-				<form onSubmit={handleSubmit} className="space-y-6">
-					{/* Código */}
-					<div>
-						<label className="block text-gray-300 text-sm font-medium mb-2">
-							Código del Curso
-						</label>
-						<input
-							type="text"
-							name="codigo"
-							value={formData.codigo}
-							onChange={handleChange}
-							className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="Ej: MAT101"
-						/>
-						{validationErrors.codigo && (
-							<p className="mt-1 text-sm text-red-400">{validationErrors.codigo}</p>
-						)}
-					</div>
+				<form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+                    {/* Usuario ID */}
+                    <div>
+                        <label htmlFor="usuarioId" className="block text-gray-300 text-sm font-medium mb-2">
+                            ID de Usuario
+                        </label>
+                        <input
+                            type="number"
+                            name="usuarioId"
+                            id="usuarioId"
+                            value={formData.usuarioId}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ej: 1"
+                        />
+                        {validationErrors.usuarioId && (
+                            <p className="mt-1 text-sm text-red-400">{validationErrors.usuarioId}</p>
+                        )}
+                    </div>
 
-					{/* Nombre */}
-					<div>
-						<label className="block text-gray-300 text-sm font-medium mb-2">
-							Nombre del Curso
-						</label>
-						<input
-							type="text"
-							name="nombre"
-							value={formData.nombre}
-							onChange={handleChange}
-							className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="Ej: Matemáticas I"
-						/>
-						{validationErrors.nombre && (
-							<p className="mt-1 text-sm text-red-400">{validationErrors.nombre}</p>
-						)}
-					</div>
+                    {/* Curso ID */}
+                    <div>
+                        <label htmlFor="cursoId" className="block text-gray-300 text-sm font-medium mb-2">
+                            ID de Curso
+                        </label>
+                        <input
+                            type="number"
+                            name="cursoId"
+                            id="cursoId"
+                            value={formData.cursoId}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ej: 101"
+                        />
+                        {validationErrors.cursoId && (
+                            <p className="mt-1 text-sm text-red-400">{validationErrors.cursoId}</p>
+                        )}
+                    </div>
 
-					{/* Créditos */}
-					<div>
-						<label className="block text-gray-300 text-sm font-medium mb-2">
-							Créditos
-						</label>
-						<select
-						
-							name="creditos"
-							value={formData.creditos}
-							onChange={handleChange}
-							className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-							<option value="" disabled>Seleccione créditos</option>
-							{[3, 4, 5, 6, 7, 8, 9].map((credito) => (
-								<option key={credito} value={credito}>
-									{credito} Crédito{credito > 1 ? "s" : ""}
-								</option>
-							))}
-							
-						</select>
+                    {/* Horario ID */}
+                    <div>
+                        <label htmlFor="horarioId" className="block text-gray-300 text-sm font-medium mb-2">
+                            ID de Horario
+                        </label>
+                        <input
+                            type="number"
+                            name="horarioId"
+                            id="horarioId"
+                            value={formData.horarioId}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ej: 201"
+                        />
+                        {validationErrors.horarioId && (
+                            <p className="mt-1 text-sm text-red-400">{validationErrors.horarioId}</p>
+                        )}
+                    </div>
 
-							
-						
-						
-						{validationErrors.creditos && (
-							<p className="mt-1 text-sm text-red-400">{validationErrors.creditos}</p>
-						)}
-						
-					</div>
+                    {/* Grupo */}
+                    <div>
+                        <label htmlFor="grupo" className="block text-gray-300 text-sm font-medium mb-2">
+                            Grupo
+                        </label>
+                        <input
+                            type="text"
+                            name="grupo"
+                            id="grupo"
+                            value={formData.grupo}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ej: A1"
+                        />
+                        {validationErrors.grupo && (
+                            <p className="mt-1 text-sm text-red-400">{validationErrors.grupo}</p>
+                        )}
+                    </div>
 
-					
+                    {/* Periodo */}
+                    <div>
+                        <label htmlFor="periodo" className="block text-gray-300 text-sm font-medium mb-2">
+                            Periodo
+                        </label>
+                        <input
+                            type="text"
+                            name="periodo"
+                            id="periodo"
+                            value={formData.periodo}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ej: 2025-1"
+                        />
+                        {validationErrors.periodo && (
+                            <p className="mt-1 text-sm text-red-400">{validationErrors.periodo}</p>
+                        )}
+                    </div>
 
-					{/* Descripción */}
-					<div>
-						<label className="block text-gray-300 text-sm font-medium mb-2">
-							Descripción
-						</label>
-						<textarea
-							name="descripcion"
-							value={formData.descripcion}
-							onChange={handleChange}
-							rows="3"
-							className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-							placeholder="Describe el contenido del curso..."
-						/>
-					</div>
+                    {/* Carrera */}
+                    <div>
+                        <label htmlFor="carrera" className="block text-gray-300 text-sm font-medium mb-2">
+                            Carrera
+                        </label>
+                        <input
+                            type="text"
+                            name="carrera"
+                            id="carrera"
+                            value={formData.carrera}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ej: Ingeniería de Software"
+                        />
+                        {validationErrors.carrera && (
+                            <p className="mt-1 text-sm text-red-400">{validationErrors.carrera}</p>
+                        )}
+                    </div>
 
-					{/* Error general */}
-					{error && (
-						<div className="text-red-400 text-sm bg-red-400 bg-opacity-10 border border-red-400 rounded-lg px-4 py-3">
-							{error}
-						</div>
-					)}
+                    {/* Cupos Máximos */}
+                    <div>
+                        <label htmlFor="cuposMax" className="block text-gray-300 text-sm font-medium mb-2">
+                            Cupos Máximos
+                        </label>
+                        <input
+                            type="number"
+                            name="cuposMax"
+                            id="cuposMax"
+                            value={formData.cuposMax}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Ej: 30"
+                        />
+                        {validationErrors.cuposMax && (
+                            <p className="mt-1 text-sm text-red-400">{validationErrors.cuposMax}</p>
+                        )}
+                    </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="text-red-400 text-sm p-3 bg-red-900/30 border border-red-700 rounded-md">
+                            {error}
+                        </div>
+                    )}
 
 					{/* Botones */}
-					<div className="flex justify-end space-x-3 pt-4">
+					<div className="flex flex-col sm:flex-row justify-end space-y-3 sm:space-y-0 sm:space-x-4 pt-2">
 						<button
 							type="button"
 							onClick={onClose}
 							className="px-4 py-2 text-gray-400 hover:text-gray-300 transition-colors duration-200"
+							disabled={loading}
 						>
 							Cancelar
 						</button>
 						<button
 							type="submit"
+							className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-colors duration-200 flex items-center justify-center"
 							disabled={loading}
-							className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[100px]"
 						>
 							{loading ? (
-								<Loader2 className="w-5 h-5 animate-spin" />
-							) : cursoToEdit ? (
-								"Actualizar"
-							) : (
-								"Crear"
-							)}
+								<Loader2 className="w-5 h-5 mr-2 animate-spin" />
+							) : null}
+							{seccionToEdit ? "Actualizar Sección" : "Crear Sección"}
 						</button>
 					</div>
 				</form>
