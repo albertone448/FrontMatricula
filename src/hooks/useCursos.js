@@ -1,4 +1,6 @@
 import { useState, useCallback } from "react";
+import { authUtils } from '../utils/authUtils';
+import api from '../services/apiConfig';
 
 export function useCursos() {
 	const [cursos, setCursos] = useState([]);
@@ -10,152 +12,113 @@ export function useCursos() {
 		setError("");
 		
 		try {
-			const response = await fetch("http://localhost:5276/api/Curso/GetAllCursos", {
-				method: "GET",
-				headers: {
-					"Accept": "application/json"
-				}
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error("Token de autenticación no encontrado");
 			}
 
-			const data = await response.json();
-			setCursos(data);
+			const response = await api.get("Curso/GetAllCursos");
+			setCursos(response.data);
 		} catch (error) {
 			console.error("Error fetching cursos:", error);
-			setError(error.message);
+			setError(error.response?.data?.message || error.message);
 		} finally {
 			setLoading(false);
 		}
 	}, []);
 
-const getCursoById = useCallback(async (cursoId) => {
-        setLoading(true);
-        setError("");
-        
-        try {
-            const response = await fetch(`http://localhost:5276/api/Curso/GetCursoById/${cursoId}`, {
-                method: "GET",
-                headers: {
-                    "Accept": "application/json"
-                }
-            });
+	const getCursoById = useCallback(async (cursoId) => {
+		setLoading(true);
+		setError("");
+		
+		try {
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error("Token de autenticación no encontrado");
+			}
 
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const curso = await response.json();
-            return curso;
-        } catch (error) {
-            console.error("Error fetching curso by ID:", error);
-            setError(error.message);
-            throw error;
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-    
-    
+			const response = await api.get(`Curso/GetCursoById/${cursoId}`);
+			return response.data;
+		} catch (error) {
+			console.error("Error fetching curso by ID:", error);
+			setError(error.response?.data?.message || error.message);
+			throw error;
+		} finally {
+			setLoading(false);
+		}
+	}, []);
 
 	const createCurso = useCallback(async (cursoData) => {
 		setLoading(true);
 		setError("");
 		
 		try {
-			const response = await fetch("http://localhost:5276/api/Curso/AddCurso", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					"Accept": "application/json"
-				},
-				body: JSON.stringify(cursoData)
-               
-			});
-            
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error("Token de autenticación no encontrado");
 			}
 
-			const newCurso = await response.json();
+			const response = await api.post("Curso/AddCurso", cursoData);
+			const newCurso = response.data;
 			setCursos(prev => [...prev, newCurso]);
 			return newCurso;
 		} catch (error) {
 			console.error("Error creating curso:", error);
-			setError(error.message);
+			setError(error.response?.data?.message || error.message);
 			throw error;
 		} finally {
 			setLoading(false);
 		}
 	}, []);
-	
-	
-		const updateCurso = useCallback(async (cursoData) => {
-	setLoading(true);
-	setError("");
-	
-	try {
-		console.log('Actualizando curso:', {cursoData});
-		const response = await fetch(`http://localhost:5276/api/Curso/UpdateCurso`, {
-			method: "PUT",				
-			headers: {
-				"Content-Type": "application/json",
-				"Accept": "application/json"
-			},
-			body: JSON.stringify(cursoData)
-		});
 
-		if (!response.ok) {
-			throw new Error(`HTTP error! status: ${response.status}`);
-		}
-
-		// Manejar respuesta basada en el status code
-		let updatedCurso = null;
+	const updateCurso = useCallback(async (cursoData) => {
+		setLoading(true);
+		setError("");
 		
-		if (response.status === 204) {
-			// Status 204 (No Content) - actualización exitosa sin contenido
-			console.log('Curso actualizado exitosamente (204 No Content)');
-			updatedCurso = cursoData; // Retornar los datos enviados
-		} else {
-			// Otros códigos de éxito (200, 201, etc.) con contenido JSON
-			updatedCurso = await response.json();
-		}
+		try {
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error("Token de autenticación no encontrado");
+			}
 
-		// Actualizar la lista de cursos con el curso actualizado
-		await fetchCursos(); // Recargar todos los cursos para asegurar datos frescos
-		return updatedCurso;
-		
-	} catch (error) {
-		console.error("Error updating curso:", error);
-		setError(error.message);
-		throw error;
-	} finally {
-		setLoading(false);
-	}
-}, []);
+			const response = await api.put("Curso/UpdateCurso", cursoData);
+			
+			// Manejar respuesta basada en el status code
+			let updatedCurso = null;
+			if (response.status === 204) {
+				console.log('Curso actualizado exitosamente (204 No Content)');
+				updatedCurso = cursoData;
+			} else {
+				updatedCurso = response.data;
+			}
+
+			// Actualizar la lista de cursos
+			await fetchCursos();
+			return updatedCurso;
+		} catch (error) {
+			console.error("Error updating curso:", error);
+			setError(error.response?.data?.message || error.message);
+			throw error;
+		} finally {
+			setLoading(false);
+		}
+	}, []);
 
 	const deleteCurso = useCallback(async (cursoId) => {
 		setLoading(true);
 		setError("");
 		
 		try {
-			const response = await fetch(`http://localhost:5276/api/Curso/DeleteCurso/${cursoId}`, {
-				method: "DELETE",
-				headers: {
-					"Accept": "application/json"
-				}
-			});
-
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
+			const token = authUtils.getToken();
+			if (!token) {
+				throw new Error("Token de autenticación no encontrado");
 			}
 
+			await api.delete(`Curso/DeleteCurso/${cursoId}`);
 			setCursos(prev => prev.filter(c => c.cursoId !== cursoId));
 		} catch (error) {
 			console.error("Error deleting curso:", error);
-			setError(error.message);
+			setError(error.response?.data?.message || error.message);
 			throw error;
 		} finally {
 			setLoading(false);
@@ -167,7 +130,7 @@ const getCursoById = useCallback(async (cursoId) => {
 		loading,
 		error,
 		fetchCursos,
-        getCursoById,
+		getCursoById,
 		createCurso,
 		updateCurso,
 		deleteCurso
