@@ -177,16 +177,15 @@ const HorarioEstudiante = ({
 					</motion.button>
 				</div>
 			</motion.div>
-
-			{/* Estadísticas del horario */}
-			<HorarioStats stats={stats} seccionesPorDia={seccionesPorDia} />
-
-			{/* Vista del horario */}
+            {/* Vista del horario */}
 			{viewMode === "grid" ? (
 				<HorarioGrid secciones={secciones} />
 			) : (
 				<HorarioList secciones={secciones} />
 			)}
+			{/* Estadísticas del horario */}
+			<HorarioStats stats={stats} seccionesPorDia={seccionesPorDia} />
+
 		</div>
 	);
 };
