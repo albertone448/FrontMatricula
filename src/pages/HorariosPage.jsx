@@ -7,6 +7,8 @@ import HorarioEstudiante from "../components/horarios/HorarioEstudiante";
 import HorarioProfesor from "../components/horarios/HorarioProfesor";
 import LoadingSpinner from "../components/horarios/LoadingSpinner";
 import ErrorMessage from "../components/horarios/ErrorMessage";
+import HorarioAdminTable from "../components/horarios/HorarioAdminTable";
+import { motion } from "framer-motion"; // ✅ Agregar esta línea
 
 const HorariosPage = () => {
 	const { userRole, loading: roleLoading } = useUserRole();
@@ -15,6 +17,9 @@ const HorariosPage = () => {
 	const [horarioData, setHorarioData] = useState(null);
 	const [periodosDisponibles, setPeriodosDisponibles] = useState([]);
 	const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
+	const [todosLosHorarios, setTodosLosHorarios] = useState([]);
+	const [todasLasSecciones, setTodasLasSecciones] = useState([]);
+	const [todosLosCursos, setTodosLosCursos] = useState([]);
 
 	// Función para obtener todos los periodos disponibles del estudiante
 	const fetchPeriodosDisponiblesEstudiante = async () => {
@@ -50,6 +55,42 @@ const HorariosPage = () => {
 			return [];
 		}
 	};
+
+
+	// Agregar esta función para cargar datos de administrador:
+	const fetchDatosAdmin = async () => {
+		try {
+			setLoading(true);
+			setError("");
+
+			console.log("🔍 Cargando todos los datos para administrador...");
+
+			// Cargar horarios, secciones y cursos en paralelo
+			const [horariosResponse, seccionesResponse, cursosResponse] = await Promise.all([
+				api.get("Horario/GetAllHorarios"),
+				api.get("Seccion/GetAllSecciones"),
+				api.get("Curso/GetAllCursos")
+			]);
+
+			setTodosLosHorarios(horariosResponse.data);
+			setTodasLasSecciones(seccionesResponse.data);
+			setTodosLosCursos(cursosResponse.data);
+
+			console.log("✅ Datos de administrador cargados:", {
+				horarios: horariosResponse.data.length,
+				secciones: seccionesResponse.data.length,
+				cursos: cursosResponse.data.length
+			});
+
+		} catch (error) {
+			console.error("❌ Error cargando datos de administrador:", error);
+			setError(error.response?.data?.message || error.message || "Error al cargar los datos");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+
 
 	// Función para obtener todos los periodos disponibles del profesor
 	const fetchPeriodosDisponiblesProfesor = async () => {
@@ -317,6 +358,9 @@ const HorariosPage = () => {
 						fetchHorarioProfesor();
 					}
 				});
+			} else if (userRole === "Administrador") {
+				// Lógica para administradores
+				fetchDatosAdmin();
 			} else {
 				// Para administradores u otros roles
 				setLoading(false);
@@ -349,6 +393,8 @@ const HorariosPage = () => {
 				setPeriodosDisponibles(periodos);
 				fetchHorarioProfesor(periodoSeleccionado);
 			});
+		}	else if (userRole === "Administrador") {
+			fetchDatosAdmin();
 		}
 	};
 
@@ -441,10 +487,43 @@ const HorariosPage = () => {
 
 				{/* Contenido para administradores */}
 				{userRole === "Administrador" && (
-					<div className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-8 border border-gray-700 text-center">
-						<h2 className="text-2xl font-bold text-gray-100 mb-4">Gestión de Horarios</h2>
-						<p className="text-gray-400">Próximamente: Vista administrativa de horarios</p>
-					</div>
+					<>
+						{loading && <LoadingSpinner message="Cargando todos los horarios..." />}
+						
+						{error && (
+							<ErrorMessage 
+								message={error} 
+								onRetry={handleRefresh}
+							/>
+						)}
+						
+						{!loading && !error && (
+							<div className="space-y-6">
+								{/* Header para administradores */}
+								<motion.div
+									initial={{ opacity: 0, y: 20 }}
+									animate={{ opacity: 1, y: 0 }}
+									className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+								>
+									<div>
+										<h1 className="text-3xl font-bold text-gray-100 mb-2">Gestión de Horarios</h1>
+										<p className="text-gray-400">
+											Vista administrativa de todos los horarios del sistema
+										</p>
+									</div>
+								</motion.div>
+
+								{/* Tabla de horarios */}
+								<HorarioAdminTable
+									horarios={todosLosHorarios}
+									secciones={todasLasSecciones}
+									cursos={todosLosCursos}
+									loading={loading}
+									onRefresh={handleRefresh}
+								/>
+							</div>
+						)}
+					</>
 				)}
 
 				{/* Error de autenticación */}
