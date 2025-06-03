@@ -2,10 +2,62 @@ import { useState, useEffect, useCallback } from 'react';
 import { authUtils } from '../utils/authUtils';
 import api from '../services/apiConfig';
 
-export const useSecciones = () => {    const [secciones, setSecciones] = useState([]);
+export const useSecciones = () => {
+    const [secciones, setSecciones] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
+    const [profesores, setProfesores] = useState([]);
+    const [cursos, setCursos] = useState([]);
+
+    // Función para obtener información del profesor
+    const fetchProfesorInfo = useCallback(async (usuarioId) => {
+        try {
+            const response = await api.get(`Usuario/GetUsuarioPorId/${usuarioId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error al obtener profesor ${usuarioId}:`, error);
+            return null;
+        }
+    }, []);
+
+    // Función para obtener información del curso
+    const fetchCursoInfo = useCallback(async (cursoId) => {
+        try {
+            const response = await api.get(`Curso/GetCursoById/${cursoId}`);
+            return response.data;
+        } catch (error) {
+            console.error(`Error al obtener curso ${cursoId}:`, error);
+            return null;
+        }
+    }, []);
+
+    // Función para obtener todos los profesores
+    const fetchProfesores = useCallback(async () => {
+        try {
+            const response = await api.get("Usuario/GetTodosLosUsuarios");
+            const allUsers = response.data;
+            // Filtrar solo los profesores
+            const profesoresData = allUsers.filter(user => user.rol === "Profesor");
+            setProfesores(profesoresData);
+            return profesoresData;
+        } catch (error) {
+            console.error("Error al obtener profesores:", error);
+            return [];
+        }
+    }, []);
+
+    // Función para obtener todos los cursos
+    const fetchCursos = useCallback(async () => {
+        try {
+            const response = await api.get("Curso/GetAllCursos");
+            setCursos(response.data);
+            return response.data;
+        } catch (error) {
+            console.error("Error al obtener cursos:", error);
+            return [];
+        }
+    }, []);
 
     const fetchSecciones = useCallback(async () => {
         setLoading(true);
@@ -20,32 +72,54 @@ export const useSecciones = () => {    const [secciones, setSecciones] = useStat
             
             const response = await api.get("Seccion/GetAllSecciones");
             console.log("API response:", response);
-            console.log("API response data:", response.data);
-            console.log("API response type:", typeof response.data);
 
+            let seccionesData = [];
+            
             if (Array.isArray(response.data)) {
-                console.log("Data is an array, setting directly");
-                setSecciones(response.data);
+                seccionesData = response.data;
             } else if (response.data && typeof response.data === 'object') {
-                console.log("Data is an object:", Object.keys(response.data));
                 if (response.data.data && Array.isArray(response.data.data)) {
-                    console.log("Using nested data array");
-                    setSecciones(response.data.data);
+                    seccionesData = response.data.data;
                 } else {
                     console.error("Unexpected API response format:", response.data);
                     setError("Formato de respuesta no válido");
+                    return;
                 }
             } else {
                 console.error("Unexpected API response format:", response.data);
                 setError("Formato de respuesta no válido");
+                return;
             }
+
+            // Obtener información adicional para cada sección
+            const seccionesEnriquecidas = await Promise.all(
+                seccionesData.map(async (seccion) => {
+                    const [profesorInfo, cursoInfo] = await Promise.all([
+                        fetchProfesorInfo(seccion.usuarioId),
+                        fetchCursoInfo(seccion.cursoId)
+                    ]);
+
+                    return {
+                        ...seccion,
+                        profesor: profesorInfo,
+                        curso: cursoInfo,
+                        // Agregar campos calculados para mostrar
+                        profesorNombre: profesorInfo ? `${profesorInfo.nombre} ${profesorInfo.apellido1}` : 'Profesor no encontrado',
+                        cursoNombre: cursoInfo ? cursoInfo.nombre : 'Curso no encontrado',
+                        codigoCurso: cursoInfo ? cursoInfo.codigo : 'N/A'
+                    };
+                })
+            );
+
+            setSecciones(seccionesEnriquecidas);
+            
         } catch (error) {
             console.error("Error al obtener secciones:", error);
             setError(error.response?.data?.message || error.message);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [fetchProfesorInfo, fetchCursoInfo]);
 
     const getSeccionById = useCallback(async (seccionId) => {
         setLoading(true);
@@ -58,8 +132,22 @@ export const useSecciones = () => {    const [secciones, setSecciones] = useStat
             }
 
             const response = await api.get(`Seccion/GetSeccionById/${seccionId}`);
+            
+            // Enriquecer la sección con información adicional
+            const seccion = response.data;
+            const [profesorInfo, cursoInfo] = await Promise.all([
+                fetchProfesorInfo(seccion.usuarioId),
+                fetchCursoInfo(seccion.cursoId)
+            ]);
 
-            return response.data;
+            return {
+                ...seccion,
+                profesor: profesorInfo,
+                curso: cursoInfo,
+                profesorNombre: profesorInfo ? `${profesorInfo.nombre} ${profesorInfo.apellido1}` : 'Profesor no encontrado',
+                cursoNombre: cursoInfo ? cursoInfo.nombre : 'Curso no encontrado',
+                codigoCurso: cursoInfo ? cursoInfo.codigo : 'N/A'
+            };
         } catch (error) {
             console.error("Error al obtener sección por ID:", error);
             setError(error.response?.data?.message || error.message);
@@ -67,7 +155,7 @@ export const useSecciones = () => {    const [secciones, setSecciones] = useStat
         } finally {
             setLoading(false);
         }
-    }   , []);
+    }, [fetchProfesorInfo, fetchCursoInfo]);
 
     const createSeccion = useCallback(async (seccionData) => {
         setLoading(true);
@@ -92,7 +180,7 @@ export const useSecciones = () => {    const [secciones, setSecciones] = useStat
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [fetchSecciones]);
 
     const updateSeccion = useCallback(async (seccionData) => {
         setLoading(true);
@@ -117,9 +205,9 @@ export const useSecciones = () => {    const [secciones, setSecciones] = useStat
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [fetchSecciones]);
 
-    const deleteSeccion = useCallback(async (seccionData) => {
+    const deleteSeccion = useCallback(async (seccionId) => {
         setLoading(true);
         setError("");
         setSuccessMessage("");
@@ -130,7 +218,7 @@ export const useSecciones = () => {    const [secciones, setSecciones] = useStat
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            await api.delete(`Seccion/DeleteSeccion/`,seccionData );
+            await api.delete(`Seccion/DeleteSeccion/${seccionId}`);
 
             setSuccessMessage("Sección eliminada exitosamente");
             await fetchSecciones(); // Refrescar la lista de secciones
@@ -141,16 +229,27 @@ export const useSecciones = () => {    const [secciones, setSecciones] = useStat
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [fetchSecciones]);
+
+    // Cargar profesores y cursos cuando se monta el hook
+    useEffect(() => {
+        fetchProfesores();
+        fetchCursos();
+    }, [fetchProfesores, fetchCursos]);
+
     return {
         secciones,
         loading,
         error,
         successMessage,
+        profesores,
+        cursos,
         fetchSecciones,
         getSeccionById,
         createSeccion,
         updateSeccion,
-        deleteSeccion
+        deleteSeccion,
+        fetchProfesores,
+        fetchCursos
     };
-}
+};

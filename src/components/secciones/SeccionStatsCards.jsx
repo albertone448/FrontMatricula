@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
-import { Users, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Users, BookOpen, GraduationCap, Calendar } from "lucide-react";
 import StatCard from "../common/StatCard";
 
 const SeccionStatsCards = ({ secciones, loading }) => {
+    // Calcular estadísticas más relevantes para secciones
     const stats = {
         total: secciones?.length || 0,
-        activas: secciones?.filter(seccion => seccion.estado === "Activa").length || 0,
-        pendientes: secciones?.filter(seccion => seccion.estado === "Pendiente").length || 0,
-        inactivas: secciones?.filter(seccion => seccion.estado === "Inactiva").length || 0,
+        cursosUnicos: secciones ? [...new Set(secciones.map(s => s.cursoId))].length : 0,
+        profesoresAsignados: secciones ? [...new Set(secciones.map(s => s.usuarioId))].length : 0,
+        periodosActivos: secciones ? [...new Set(secciones.map(s => s.periodo))].length : 0,
+        cuposTotales: secciones ? secciones.reduce((sum, s) => sum + (s.cuposMax || 0), 0) : 0
     };
 
     return (
@@ -24,21 +26,21 @@ const SeccionStatsCards = ({ secciones, loading }) => {
                 color="#6366F1"
             />
             <StatCard
-                name="Secciones Activas"
-                icon={CheckCircle}
-                value={loading ? "..." : stats.activas}
+                name="Cursos Ofertados"
+                icon={BookOpen}
+                value={loading ? "..." : stats.cursosUnicos}
                 color="#10B981"
             />
             <StatCard
-                name="Secciones Pendientes"
-                icon={Clock}
-                value={loading ? "..." : stats.pendientes}
+                name="Profesores Activos"
+                icon={GraduationCap}
+                value={loading ? "..." : stats.profesoresAsignados}
                 color="#F59E0B"
             />
             <StatCard
-                name="Secciones Inactivas"
-                icon={XCircle}
-                value={loading ? "..." : stats.inactivas}
+                name="Periodos Activos"
+                icon={Calendar}
+                value={loading ? "..." : stats.periodosActivos}
                 color="#EF4444"
             />
         </motion.div>

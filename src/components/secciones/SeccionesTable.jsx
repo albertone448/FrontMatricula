@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Edit, Trash2, Folders, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, Edit, Trash2, Folders, ChevronLeft, ChevronRight, User, BookOpen } from "lucide-react";
 
-const EstadoBadge = ({ estado }) => {    const colorClasses = {
+const EstadoBadge = ({ estado }) => {
+    const colorClasses = {
         'Disponible': 'bg-green-800 text-green-100',
         'Llena': 'bg-yellow-800 text-yellow-100',
         'Cerrada': 'bg-red-800 text-red-100',
@@ -162,9 +163,13 @@ const SeccionesTable = ({
         if (!debouncedSearchTerm.trim()) return secciones;
         
         const searchLower = debouncedSearchTerm.toLowerCase();
-        return secciones.filter(seccion =>            seccion.grupo.toLowerCase().includes(searchLower) ||
-            seccion.periodo.toLowerCase().includes(searchLower) ||
-            seccion.carrera.toLowerCase().includes(searchLower)
+        return secciones.filter(seccion =>
+            seccion.grupo?.toLowerCase().includes(searchLower) ||
+            seccion.periodo?.toLowerCase().includes(searchLower) ||
+            seccion.carrera?.toLowerCase().includes(searchLower) ||
+            seccion.profesorNombre?.toLowerCase().includes(searchLower) ||
+            seccion.cursoNombre?.toLowerCase().includes(searchLower) ||
+            seccion.codigoCurso?.toLowerCase().includes(searchLower)
         );
     }, [secciones, debouncedSearchTerm]);
 
@@ -222,10 +227,10 @@ const SeccionesTable = ({
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                         <input
                             type="text"
-                            placeholder="Buscar por grupo, periodo o carrera..."
+                            placeholder="Buscar por grupo, periodo, carrera, profesor o curso..."
                             value={searchTerm}
                             onChange={(e) => handleSearchChange(e.target.value)}
-                            className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 w-80"
+                            className="pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors duration-200 w-96"
                         />
                     </div>
                 </div>
@@ -247,7 +252,10 @@ const SeccionesTable = ({
                             >
                                 <table className="min-w-full divide-y divide-gray-700">
                                     <thead>
-                                        <tr><th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Grupo</th>
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Curso</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Profesor</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Grupo</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Periodo</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Carrera</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Cupos</th>
@@ -257,7 +265,8 @@ const SeccionesTable = ({
                                     </thead>
                                     <tbody className="divide-y divide-gray-700">
                                         <AnimatePresence>
-                                            {currentSecciones.map((seccion) => (                                                <motion.tr
+                                            {currentSecciones.map((seccion) => (
+                                                <motion.tr
                                                     key={seccion.seccionId}
                                                     layout
                                                     initial={{ opacity: 0 }}
@@ -268,21 +277,58 @@ const SeccionesTable = ({
                                                         ease: "easeOut"
                                                     }}
                                                     className="hover:bg-gray-700 hover:bg-opacity-30 transition-colors duration-200"
-                                                ><td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                                >
+                                                    {/* Curso */}
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center">
+                                                            <BookOpen className="w-4 h-4 text-blue-400 mr-2" />
+                                                            <div>
+                                                                <div className="text-sm font-medium text-gray-100">
+                                                                    {seccion.codigoCurso}
+                                                                </div>
+                                                                <div className="text-xs text-gray-400">
+                                                                    {seccion.cursoNombre || 'Curso no encontrado'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    {/* Profesor */}
+                                                    <td className="px-6 py-4 whitespace-nowrap">
+                                                        <div className="flex items-center">
+                                                            <User className="w-4 h-4 text-green-400 mr-2" />
+                                                            <div className="text-sm text-gray-300">
+                                                                {seccion.profesorNombre || 'Profesor no asignado'}
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    
+                                                    {/* Grupo */}
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                                         {seccion.grupo || 'Sin asignar'}
                                                     </td>
+                                                    
+                                                    {/* Periodo */}
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                                         {seccion.periodo || 'Sin asignar'}
                                                     </td>
+                                                    
+                                                    {/* Carrera */}
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                                         {seccion.carrera || 'Sin asignar'}
                                                     </td>
+                                                    
+                                                    {/* Cupos */}
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                                         {seccion.cuposMax || 0}
                                                     </td>
+                                                    
+                                                    {/* Estado */}
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                         <EstadoBadge estado={computeSeccionStatus(seccion)} />
                                                     </td>
+                                                    
+                                                    {/* Acciones */}
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                                         <SeccionActions
                                                             seccion={seccion}

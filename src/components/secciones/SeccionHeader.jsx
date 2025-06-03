@@ -1,13 +1,21 @@
 import { motion } from "framer-motion";
-import { FolderPlus, RefreshCw } from "lucide-react";
+import { FolderPlus, RefreshCw, Shield } from "lucide-react";
 
 const SeccionHeader = ({ onCreateSeccion, onRefresh, loading }) => {
 	return (
 		<div className="mb-8">
 			<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h1 className="text-2xl font-bold text-gray-100 mb-2">Secciones del Sistema</h1>
-					<p className="text-gray-400">Gestiona las secciones disponibles en el sistema</p>
+					<div className="flex items-center mb-2">
+						<Shield className="w-6 h-6 text-red-400 mr-2" />
+						<h1 className="text-2xl font-bold text-gray-100">Gestión de Secciones</h1>
+						<span className="ml-3 px-3 py-1 bg-red-600 bg-opacity-20 border border-red-500 text-red-400 text-xs font-medium rounded-full">
+							Solo Administradores
+						</span>
+					</div>
+					<p className="text-gray-400">
+						Administra las secciones de cursos, asigna profesores y gestiona horarios
+					</p>
 				</div>
 				<div className="flex items-center space-x-3 mt-4 sm:mt-0">
 					<motion.button
