@@ -12,9 +12,46 @@ const HorariosPage = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
 	const [horarioData, setHorarioData] = useState(null);
+	const [periodosDisponibles, setPeriodosDisponibles] = useState([]);
+	const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
 
-	// Función para obtener los datos del horario del estudiante
-	const fetchHorarioEstudiante = async () => {
+	// Función para obtener todos los periodos disponibles del estudiante
+	const fetchPeriodosDisponibles = async () => {
+		try {
+			const userId = authUtils.getUserId();
+			if (!userId) return [];
+
+			console.log("🔍 Obteniendo periodos disponibles para usuario:", userId);
+
+			// Obtener todas las inscripciones del estudiante
+			const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
+			const inscripciones = inscripcionesResponse.data;
+
+			if (!inscripciones || inscripciones.length === 0) {
+				return [];
+			}
+
+			// Obtener secciones para extraer periodos únicos
+			const seccionesPromises = inscripciones.map(inscripcion => 
+				api.get(`Seccion/GetSeccionById/${inscripcion.seccionId}`)
+			);
+			
+			const seccionesResponses = await Promise.all(seccionesPromises);
+			const secciones = seccionesResponses.map(response => response.data);
+
+			// Extraer periodos únicos
+			const periodos = [...new Set(secciones.map(seccion => seccion.periodo).filter(Boolean))];
+			console.log("📅 Periodos disponibles:", periodos);
+
+			return periodos.sort().reverse(); // Más recientes primero
+		} catch (error) {
+			console.error("❌ Error obteniendo periodos:", error);
+			return [];
+		}
+	};
+
+	// Función para obtener los datos del horario del estudiante por periodo
+	const fetchHorarioEstudiante = async (periodo = null) => {
 		try {
 			setLoading(true);
 			setError("");
@@ -24,7 +61,7 @@ const HorariosPage = () => {
 				throw new Error("No se encontró el ID del usuario");
 			}
 
-			console.log("🔍 Obteniendo horario para usuario:", userId);
+			console.log("🔍 Obteniendo horario para usuario:", userId, "periodo:", periodo);
 
 			// 1. Obtener inscripciones del estudiante
 			const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
@@ -48,17 +85,33 @@ const HorariosPage = () => {
 			);
 			
 			const seccionesResponses = await Promise.all(seccionesPromises);
-			const secciones = seccionesResponses.map(response => response.data);
+			let secciones = seccionesResponses.map(response => response.data);
 			
-			console.log("📚 Secciones obtenidas:", secciones);
+			// 3. Filtrar por periodo si se especifica
+			if (periodo) {
+				secciones = secciones.filter(seccion => seccion.periodo === periodo);
+				console.log(`📚 Secciones filtradas por periodo ${periodo}:`, secciones);
+			} else {
+				console.log("📚 Todas las secciones obtenidas:", secciones);
+			}
 
-			// 3. Obtener todos los horarios
+			if (secciones.length === 0) {
+				setHorarioData({ 
+					secciones: [], 
+					horarios: [], 
+					cursos: [],
+					message: periodo ? `No tienes clases en el periodo ${periodo}` : "No se encontraron secciones" 
+				});
+				return;
+			}
+
+			// 4. Obtener todos los horarios
 			const horariosResponse = await api.get("Horario/GetAllHorarios");
 			const todosLosHorarios = horariosResponse.data;
 			
 			console.log("⏰ Horarios obtenidos:", todosLosHorarios);
 
-			// 4. Obtener información detallada de cada curso por separado
+			// 5. Obtener información detallada de cada curso por separado
 			console.log("📖 Obteniendo información de cursos...");
 			const cursosPromises = secciones.map(seccion => 
 				api.get(`Curso/GetCursoById/${seccion.cursoId}`)
@@ -69,10 +122,10 @@ const HorariosPage = () => {
 			
 			console.log("📖 Cursos obtenidos individualmente:", cursos);
 
-			// 5. Procesar y organizar los datos con información completa
+			// 6. Procesar y organizar los datos con información completa
 			const horariosProcesados = secciones.map((seccion, index) => {
 				const horario = todosLosHorarios.find(h => h.horarioId === seccion.horarioId);
-				const curso = cursos[index]; // El curso correspondiente a esta sección
+				const curso = cursos[index];
 				const inscripcion = inscripciones.find(i => i.seccionId === seccion.seccionId);
 				
 				console.log(`🔍 Sección ${seccion.seccionId} - Curso:`, curso);
@@ -80,18 +133,18 @@ const HorariosPage = () => {
 				return {
 					...seccion,
 					horario,
-					curso, // Información completa del curso obtenida por ID
+					curso,
 					inscripcionId: inscripcion.inscripcionId
 				};
-			}).filter(item => item.horario && item.curso); // Filtrar solo las que tienen horario y curso
+			}).filter(item => item.horario && item.curso);
 
 			console.log("✅ Horarios procesados con cursos:", horariosProcesados);
 
 			setHorarioData({
 				secciones: horariosProcesados,
 				horarios: todosLosHorarios,
-				cursos: cursos, // Los cursos obtenidos individualmente
-				message: horariosProcesados.length === 0 ? "No se encontraron horarios asignados" : null
+				cursos: cursos,
+				message: horariosProcesados.length === 0 ? "No se encontraron horarios asignados para este periodo" : null
 			});
 
 		} catch (error) {
@@ -105,16 +158,39 @@ const HorariosPage = () => {
 	// Cargar datos cuando el componente se monte y el rol esté disponible
 	useEffect(() => {
 		if (!roleLoading && userRole === "Estudiante") {
-			fetchHorarioEstudiante();
+			// Primero cargar los periodos disponibles
+			fetchPeriodosDisponibles().then(periodos => {
+				setPeriodosDisponibles(periodos);
+				
+				// Si hay periodos, seleccionar el más reciente por defecto
+				if (periodos.length > 0) {
+					const periodoReciente = periodos[0];
+					setPeriodoSeleccionado(periodoReciente);
+					fetchHorarioEstudiante(periodoReciente);
+				} else {
+					// Si no hay periodos, cargar todo
+					fetchHorarioEstudiante();
+				}
+			});
 		} else if (!roleLoading && userRole) {
 			setLoading(false);
 		}
 	}, [roleLoading, userRole]);
 
+	// Función para manejar el cambio de periodo
+	const handlePeriodoChange = (nuevoPeriodo) => {
+		setPeriodoSeleccionado(nuevoPeriodo);
+		fetchHorarioEstudiante(nuevoPeriodo);
+	};
+
 	// Función para refrescar los datos
 	const handleRefresh = () => {
 		if (userRole === "Estudiante") {
-			fetchHorarioEstudiante();
+			// Refrescar periodos disponibles y recargar el periodo actual
+			fetchPeriodosDisponibles().then(periodos => {
+				setPeriodosDisponibles(periodos);
+				fetchHorarioEstudiante(periodoSeleccionado);
+			});
 		}
 	};
 
@@ -150,6 +226,20 @@ const HorariosPage = () => {
 						{!loading && !error && horarioData && (
 							<HorarioEstudiante 
 								horarioData={horarioData}
+								periodosDisponibles={periodosDisponibles}
+								periodoSeleccionado={periodoSeleccionado}
+								onPeriodoChange={handlePeriodoChange}
+								onRefresh={handleRefresh}
+							/>
+						)}
+
+						{/* Mostrar componente incluso si horarioData es null pero no hay loading ni error */}
+						{!loading && !error && !horarioData && (
+							<HorarioEstudiante 
+								horarioData={{ secciones: [], message: "No se pudieron cargar los datos del horario" }}
+								periodosDisponibles={periodosDisponibles}
+								periodoSeleccionado={periodoSeleccionado}
+								onPeriodoChange={handlePeriodoChange}
 								onRefresh={handleRefresh}
 							/>
 						)}
