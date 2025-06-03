@@ -1,16 +1,42 @@
-
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Clock, BookOpen, MapPin, RefreshCw, Users, GraduationCap } from "lucide-react";
+import { Calendar, Clock, BookOpen, MapPin, RefreshCw, Users, GraduationCap, ChevronDown } from "lucide-react";
 import HorarioGrid from "./HorarioGrid";
 import HorarioStats from "./HorarioStats";
 
-const HorarioEstudiante = ({ horarioData, onRefresh }) => {
+const HorarioEstudiante = ({ 
+	horarioData, 
+	periodosDisponibles = [], 
+	periodoSeleccionado, 
+	onPeriodoChange, 
+	onRefresh 
+}) => {
 	const [viewMode, setViewMode] = useState("grid"); // "grid" o "list"
 
-	const { secciones, message } = horarioData;
+	// Validación y valores por defecto para horarioData
+	const { secciones = [], message } = horarioData || {};
 
-	// Agrupar secciones por día para estadísticas
+	// Validación adicional para evitar errores
+	if (!horarioData) {
+		return (
+			<motion.div
+				initial={{ opacity: 0, y: 20 }}
+				animate={{ opacity: 1, y: 0 }}
+				className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-8 border border-gray-700 text-center"
+			>
+				<Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+				<h2 className="text-2xl font-bold text-gray-100 mb-4">Mi Horario</h2>
+				<p className="text-gray-400 mb-6">Cargando información del horario...</p>
+				<button
+					onClick={onRefresh}
+					className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center mx-auto"
+				>
+					<RefreshCw className="w-4 h-4 mr-2" />
+					Actualizar
+				</button>
+			</motion.div>
+		);
+	}
 	const seccionesPorDia = secciones.reduce((acc, seccion) => {
 		const dia = seccion.horario?.dia;
 		if (dia) {
@@ -24,7 +50,7 @@ const HorarioEstudiante = ({ horarioData, onRefresh }) => {
 		totalCursos: secciones.length,
 		diasConClases: Object.keys(seccionesPorDia).length,
 		horasSemanales: secciones.length * 3.33, // Aproximadamente 3.33 horas por clase
-		periodo: secciones[0]?.periodo || "Sin definir"
+		periodo: periodoSeleccionado || "Sin definir"
 	};
 
 	if (message) {
@@ -37,6 +63,30 @@ const HorarioEstudiante = ({ horarioData, onRefresh }) => {
 				<Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
 				<h2 className="text-2xl font-bold text-gray-100 mb-4">Mi Horario</h2>
 				<p className="text-gray-400 mb-6">{message}</p>
+				
+				{/* Selector de periodo incluso cuando no hay datos */}
+				{periodosDisponibles.length > 0 && (
+					<div className="mb-6">
+						<label className="block text-sm font-medium text-gray-300 mb-2">
+							Seleccionar Periodo:
+						</label>
+						<div className="relative max-w-xs mx-auto">
+							<select
+								value={periodoSeleccionado}
+								onChange={(e) => onPeriodoChange(e.target.value)}
+								className="appearance-none w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 pr-8 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							>
+								{periodosDisponibles.map((periodo) => (
+									<option key={periodo} value={periodo}>
+										{periodo}
+									</option>
+								))}
+							</select>
+							<ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+						</div>
+					</div>
+				)}
+				
 				<button
 					onClick={onRefresh}
 					className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center mx-auto"
@@ -50,20 +100,47 @@ const HorarioEstudiante = ({ horarioData, onRefresh }) => {
 
 	return (
 		<div className="space-y-6">
-			{/* Header con título y controles */}
+			{/* Header con título, selector de periodo y controles */}
 			<motion.div
 				initial={{ opacity: 0, y: 20 }}
 				animate={{ opacity: 1, y: 0 }}
-				className="flex flex-col sm:flex-row sm:items-center sm:justify-between"
+				className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
 			>
-				<div>
+				<div className="flex-1">
 					<h1 className="text-3xl font-bold text-gray-100 mb-2">Mi Horario</h1>
-					<p className="text-gray-400">
-						Periodo: <span className="text-blue-400 font-medium">{stats.periodo}</span>
-					</p>
+					
+					{/* Selector de periodo */}
+					{periodosDisponibles.length > 0 ? (
+						<div className="flex items-center gap-3">
+							<span className="text-gray-400">Periodo:</span>
+							<div className="relative">
+								<select
+									value={periodoSeleccionado}
+									onChange={(e) => onPeriodoChange(e.target.value)}
+									className="appearance-none bg-gray-700 border border-gray-600 rounded-lg px-3 py-1 pr-8 text-blue-400 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+								>
+									{periodosDisponibles.map((periodo) => (
+										<option key={periodo} value={periodo}>
+											{periodo}
+										</option>
+									))}
+								</select>
+								<ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+							</div>
+							{periodosDisponibles.length > 1 && (
+								<span className="text-xs text-gray-500">
+									({periodosDisponibles.length} periodos disponibles)
+								</span>
+							)}
+						</div>
+					) : (
+						<p className="text-gray-400">
+							Periodo: <span className="text-blue-400 font-medium">{stats.periodo}</span>
+						</p>
+					)}
 				</div>
 				
-				<div className="flex items-center space-x-3 mt-4 sm:mt-0">
+				<div className="flex items-center space-x-3">
 					{/* Selector de vista */}
 					<div className="flex bg-gray-700 rounded-lg p-1">
 						<button
@@ -115,7 +192,7 @@ const HorarioEstudiante = ({ horarioData, onRefresh }) => {
 };
 
 // Componente para vista de lista
-const HorarioList = ({ secciones }) => {
+const HorarioList = ({ secciones = [] }) => {
 	// Agrupar por día
 	const seccionesPorDia = secciones.reduce((acc, seccion) => {
 		const dia = seccion.horario?.dia;
@@ -126,8 +203,8 @@ const HorarioList = ({ secciones }) => {
 		return acc;
 	}, {});
 
-	// Ordenar días
-	const diasOrdenados = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+	// Ordenar días - incluir sábado y domingo
+	const diasOrdenados = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 	
 	return (
 		<div className="grid gap-6">

@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import { Clock, BookOpen, Users, MapPin, Code } from "lucide-react";
 
-const HorarioGrid = ({ secciones }) => {
-	// Definir los horarios y días
-	const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+const HorarioGrid = ({ secciones = [] }) => {
+	// Definir los horarios y días - incluir sábado y domingo
+	const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 	const horariosDisponibles = [
 		{ inicio: "08:00:00", fin: "11:20:00", label: "08:00 - 11:20" },
 		{ inicio: "13:00:00", fin: "16:20:00", label: "13:00 - 16:20" },
@@ -134,14 +134,14 @@ const HorarioGrid = ({ secciones }) => {
 					<Clock className="w-6 h-6 mr-2 text-blue-400" />
 					Horario Semanal
 				</h2>
-				<p className="text-gray-400">Vista en cuadrícula de tus clases</p>
+				<p className="text-gray-400">Vista en cuadrícula de tus clases (incluye fines de semana)</p>
 			</div>
 
 			{/* Tabla de horarios */}
 			<div className="overflow-x-auto">
 				<div className="min-w-full">
 					{/* Header de la tabla */}
-					<div className="grid grid-cols-6 gap-2 mb-4">
+					<div className="grid grid-cols-8 gap-2 mb-4">
 						{/* Columna de horarios */}
 						<div className="bg-gray-700 bg-opacity-50 rounded-lg p-3 text-center">
 							<span className="text-sm font-semibold text-gray-300">Horario</span>
@@ -149,15 +149,21 @@ const HorarioGrid = ({ secciones }) => {
 						
 						{/* Columnas de días */}
 						{diasSemana.map(dia => (
-							<div key={dia} className="bg-gray-700 bg-opacity-50 rounded-lg p-3 text-center">
-								<span className="text-sm font-semibold text-gray-300">{dia}</span>
+							<div key={dia} className={`bg-gray-700 bg-opacity-50 rounded-lg p-3 text-center ${
+								dia === "Sábado" || dia === "Domingo" ? "bg-opacity-30" : ""
+							}`}>
+								<span className={`text-sm font-semibold ${
+									dia === "Sábado" || dia === "Domingo" ? "text-gray-400" : "text-gray-300"
+								}`}>
+									{dia === "Miércoles" ? "Miér." : dia === "Sábado" ? "Sáb." : dia === "Domingo" ? "Dom." : dia}
+								</span>
 							</div>
 						))}
 					</div>
 
 					{/* Filas de horarios */}
 					{horariosDisponibles.map(horario => (
-						<div key={horario.label} className="grid grid-cols-6 gap-2 mb-2">
+						<div key={horario.label} className="grid grid-cols-8 gap-2 mb-2">
 							{/* Celda de horario */}
 							<div className="bg-gray-700 bg-opacity-30 rounded-lg p-2 flex items-center justify-center">
 								<span className="text-xs text-gray-400 text-center leading-tight">
@@ -221,6 +227,8 @@ const HorarioGrid = ({ secciones }) => {
 					</div>
 				</div>
 			)}
+
+			
 		</motion.div>
 	);
 };
