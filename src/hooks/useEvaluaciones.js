@@ -130,6 +130,91 @@ export const useEvaluaciones = () => {
         }
     }, [fetchEvaluaciones]);
 
+    // Función para actualizar una evaluación existente
+    const updateEvaluacion = useCallback(async (evaluacionData) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const token = authUtils.getToken();
+            if (!token) {
+                throw new Error("Token de autenticación no encontrado");
+            }
+
+            console.log('🔄 Actualizando evaluación:', evaluacionData);
+
+            const response = await api.put("Evaluacion/UpdateEvaluacion", evaluacionData);
+            
+            console.log('✅ Evaluación actualizada exitosamente:', response.data);
+
+            // Actualizar la evaluación en el estado local
+            setEvaluaciones(prev => prev.map(evaluacion => 
+                evaluacion.evaluacionId === evaluacionData.evaluacionId 
+                    ? {
+                        ...evaluacion,
+                        tipEvaluacionId: evaluacionData.tipEvaluacionId,
+                        porcentaje: evaluacionData.porcentaje,
+                        tipoNombre: getTipoEvaluacionNombre(evaluacionData.tipEvaluacionId),
+                        tipoDescripcion: getTipoEvaluacionDescripcion(evaluacionData.tipEvaluacionId)
+                    }
+                    : evaluacion
+            ));
+            
+            return response.data;
+        } catch (error) {
+            console.error("❌ Error al actualizar evaluación:", error);
+            const errorMessage = error.response?.data?.message || error.message || "Error al actualizar la evaluación";
+            setError(errorMessage);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    }, [getTipoEvaluacionNombre, getTipoEvaluacionDescripcion]);
+
+    // Función para eliminar una evaluación
+    const deleteEvaluacion = useCallback(async (evaluacionId) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const token = authUtils.getToken();
+            if (!token) {
+                throw new Error("Token de autenticación no encontrado");
+            }
+
+            console.log('🗑️ Eliminando evaluación:', evaluacionId);
+
+            const response = await api.delete("Evaluacion/DeleteEvaluacion", {
+                data: { evaluacionId: evaluacionId }
+            });
+            
+            console.log('✅ Evaluación eliminada exitosamente:', response.data);
+
+            // Remover la evaluación del estado local
+            setEvaluaciones(prev => prev.filter(evaluacion => evaluacion.evaluacionId !== evaluacionId));
+            
+            return response.data;
+        } catch (error) {
+            console.error("❌ Error al eliminar evaluación:", error);
+            
+            // Manejo específico de errores
+            let errorMessage = "Error al eliminar la evaluación";
+            
+            if (error.response?.status === 400) {
+                errorMessage = "En este momento no se puede eliminar la evaluación. Puede que tenga calificaciones asociadas.";
+            } else if (error.response?.data?.message) {
+                errorMessage = error.response.data.message;
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            setError(errorMessage);
+            throw new Error(errorMessage);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     // Función para calcular el porcentaje total usado
     const calcularPorcentajeTotal = useCallback((evaluacionesActuales = []) => {
         return evaluacionesActuales.reduce((total, evaluacion) => {
@@ -138,8 +223,13 @@ export const useEvaluaciones = () => {
     }, []);
 
     // Función para validar si se puede agregar un nuevo porcentaje
-    const validarPorcentaje = useCallback((nuevoPorcentaje, evaluacionesActuales = []) => {
-        const porcentajeTotal = calcularPorcentajeTotal(evaluacionesActuales);
+    const validarPorcentaje = useCallback((nuevoPorcentaje, evaluacionesActuales = [], evaluacionEditandoId = null) => {
+        // Si estamos editando, excluir la evaluación actual del cálculo
+        const evaluacionesParaCalculo = evaluacionEditandoId 
+            ? evaluacionesActuales.filter(evaluacion => evaluacion.evaluacionId !== evaluacionEditandoId)
+            : evaluacionesActuales;
+            
+        const porcentajeTotal = calcularPorcentajeTotal(evaluacionesParaCalculo);
         const porcentajeDisponible = 100 - porcentajeTotal;
         
         if (nuevoPorcentaje > porcentajeDisponible) {
@@ -169,6 +259,8 @@ export const useEvaluaciones = () => {
         tiposEvaluacion,
         fetchEvaluaciones,
         createEvaluacion,
+        updateEvaluacion,
+        deleteEvaluacion,
         calcularPorcentajeTotal,
         validarPorcentaje,
         contarTipoEvaluacion,

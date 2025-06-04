@@ -22,6 +22,7 @@ import { useUserRole } from "../../contexts/UserRoleContext";
 import { authUtils } from "../../utils/authUtils";
 import EvaluacionesList from "./EvaluacionesList";
 import CrearEvaluacionModal from "./CrearEvaluacionModal";
+import EditarEvaluacionModal from "./EditarEvaluacionModal";
 
 const InfoCard = ({ icon: Icon, title, value, color = "text-blue-400", subtitle = null }) => (
     <motion.div
@@ -52,7 +53,9 @@ const SeccionDetailPage = () => {
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
     const [activeTab, setActiveTab] = useState("info"); // "info" o "evaluaciones"
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [evaluacionToEdit, setEvaluacionToEdit] = useState(null);
 
     // Hook de evaluaciones
     const {
@@ -62,6 +65,8 @@ const SeccionDetailPage = () => {
         tiposEvaluacion,
         fetchEvaluaciones,
         createEvaluacion,
+        updateEvaluacion,
+        deleteEvaluacion,
         calcularPorcentajeTotal,
         validarPorcentaje,
         contarTipoEvaluacion
@@ -120,17 +125,40 @@ const SeccionDetailPage = () => {
     };
 
     const handleAgregarEvaluacion = () => {
-        setIsModalOpen(true);
+        setIsCreateModalOpen(true);
     };
 
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
+    const handleEditarEvaluacion = (evaluacion) => {
+        setEvaluacionToEdit(evaluacion);
+        setIsEditModalOpen(true);
+    };
+
+    const handleEliminarEvaluacion = async (evaluacionId) => {
+        try {
+            await deleteEvaluacion(evaluacionId);
+            setSuccessMessage("Evaluación eliminada exitosamente");
+            setTimeout(() => setSuccessMessage(""), 5000);
+        } catch (error) {
+            console.error("Error al eliminar evaluación:", error);
+            // El error ya se maneja en el hook, pero podemos mostrar un mensaje adicional si es necesario
+        }
+    };
+
+    const handleCloseCreateModal = () => {
+        setIsCreateModalOpen(false);
+    };
+
+    const handleCloseEditModal = () => {
+        setIsEditModalOpen(false);
+        setEvaluacionToEdit(null);
     };
 
     const handleEvaluacionSuccess = (message) => {
         setSuccessMessage(message);
         setTimeout(() => setSuccessMessage(""), 5000);
-        setIsModalOpen(false);
+        setIsCreateModalOpen(false);
+        setIsEditModalOpen(false);
+        setEvaluacionToEdit(null);
     };
 
     const formatHorario = (horario) => {
@@ -215,7 +243,7 @@ const SeccionDetailPage = () => {
                         >
                             <AlertCircle className="w-5 h-5 mr-2" />
                             <div className="flex-1">
-                                <p className="font-medium">Error al cargar evaluaciones</p>
+                                <p className="font-medium">Error al gestionar evaluaciones</p>
                                 <p className="text-xs opacity-75 mt-1">{evaluacionesError}</p>
                             </div>
                         </motion.div>
@@ -502,6 +530,8 @@ const SeccionDetailPage = () => {
                                 loading={evaluacionesLoading}
                                 porcentajeTotal={porcentajeTotal}
                                 onAgregarEvaluacion={handleAgregarEvaluacion}
+                                onEditarEvaluacion={handleEditarEvaluacion}
+                                onEliminarEvaluacion={handleEliminarEvaluacion}
                                 canManageEvaluaciones={canManageEvaluaciones()}
                             />
                         </motion.div>
@@ -510,8 +540,8 @@ const SeccionDetailPage = () => {
 
                 {/* Modal para crear evaluación */}
                 <CrearEvaluacionModal
-                    isOpen={isModalOpen}
-                    onClose={handleCloseModal}
+                    isOpen={isCreateModalOpen}
+                    onClose={handleCloseCreateModal}
                     onSuccess={handleEvaluacionSuccess}
                     seccionId={seccionId}
                     tiposEvaluacion={tiposEvaluacion}
@@ -519,6 +549,18 @@ const SeccionDetailPage = () => {
                     validarPorcentaje={validarPorcentaje}
                     contarTipoEvaluacion={contarTipoEvaluacion}
                     createEvaluacion={createEvaluacion}
+                />
+
+                {/* Modal para editar evaluación */}
+                <EditarEvaluacionModal
+                    isOpen={isEditModalOpen}
+                    onClose={handleCloseEditModal}
+                    onSuccess={handleEvaluacionSuccess}
+                    evaluacionToEdit={evaluacionToEdit}
+                    tiposEvaluacion={tiposEvaluacion}
+                    evaluacionesExistentes={evaluaciones}
+                    validarPorcentaje={validarPorcentaje}
+                    updateEvaluacion={updateEvaluacion}
                 />
             </main>
         </div>
