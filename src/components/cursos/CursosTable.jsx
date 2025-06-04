@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search,Edit,Trash2, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search,Edit,Trash2, ChevronLeft, ChevronRight,BookOpen} from "lucide-react";
 
 const CursosTable = ({ cursos = [], loading, searchTerm, onSearchChange, onEditCurso, onDeleteCurso, userPermissions }) => {
 	const [currentPage, setCurrentPage] = useState(1);
@@ -61,7 +61,7 @@ const CursosTable = ({ cursos = [], loading, searchTerm, onSearchChange, onEditC
 								<>
 									Mostrando {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, filteredCursos.length)} de {filteredCursos.length} cursos
 								</>
-							)}
+							)}	
 						</p>
 					</div>
 					<div className="mt-4 sm:mt-0 relative">
@@ -82,8 +82,8 @@ const CursosTable = ({ cursos = [], loading, searchTerm, onSearchChange, onEditC
 				<table className="min-w-full divide-y divide-gray-700">
 					<thead>
 						<tr>
-							<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Código</th>
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Nombre</th>
+							<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Código</th>
 							<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Créditos</th>
 							{userPermissions.canManageCourses && (
 								<th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Acciones</th>
@@ -97,8 +97,9 @@ const CursosTable = ({ cursos = [], loading, searchTerm, onSearchChange, onEditC
 								exit={{ opacity: 0 }}
 								className="hover:bg-gray-700 hover:bg-opacity-30 transition-colors duration-200"
 							>
+								
+								<td className="px-6 py-4 whitespace-nowrap text-gray-100"><div className="flex items-center"><BookOpen className="w-4 h-4 text-blue-400 mr-2" />{curso.nombre}</div></td>
 								<td className="px-6 py-4 whitespace-nowrap text-gray-100">{curso.codigo}</td>
-								<td className="px-6 py-4 whitespace-nowrap text-gray-100">{curso.nombre}</td>
 								<td className="px-6 py-4 whitespace-nowrap text-gray-300">{curso.creditos}</td>
 								{userPermissions.canManageCourses && (
 									<td className="px-6 py-4 whitespace-nowrap text-sm">
