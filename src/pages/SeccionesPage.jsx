@@ -6,12 +6,14 @@ import { useUserRole } from "../contexts/UserRoleContext";
 import { useSecciones } from "../hooks/useSecciones";
 import { AdminOnly } from "../components/common/RoleBasedAccess";
 import { ShieldX, Home } from "lucide-react";
+import { authUtils } from "../utils/authUtils";
 
 import SeccionHeader from "../components/secciones/SeccionHeader";
 import SeccionStatsCards from "../components/secciones/SeccionStatsCards";
 import SeccionesTable from "../components/secciones/SeccionesTable";
 import SeccionAlertMessages from "../components/secciones/SeccionAlertMessages";
 import CreateSeccionModal from "../components/secciones/CreateSeccionModal";
+import SeccionesProfesorView from "../components/secciones/SeccionesProfesorView";
 
 const SeccionesPage = () => {
     const navigate = useNavigate();
@@ -31,16 +33,50 @@ const SeccionesPage = () => {
         deleteSeccion 
     } = useSecciones();
     const [seccionToEdit, setSeccionToEdit] = useState(null);
+    
+    // Estados para la funcionalidad de periodos para profesores
+    const [periodosDisponibles, setPeriodosDisponibles] = useState([]);
+    const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
+
+    // Función para obtener periodos disponibles del profesor
+    const obtenerPeriodosDelProfesor = () => {
+        if (!secciones || userRole !== "Profesor") return [];
+        
+        const userId = authUtils.getUserId();
+        if (!userId) return [];
+        
+        // Filtrar secciones del profesor actual
+        const seccionesDelProfesor = secciones.filter(seccion => seccion.usuarioId === userId);
+        
+        // Extraer periodos únicos
+        const periodos = [...new Set(seccionesDelProfesor.map(seccion => seccion.periodo).filter(Boolean))];
+        
+        console.log("📅 Periodos disponibles para profesor:", periodos);
+        return periodos.sort().reverse(); // Más recientes primero
+    };
 
     // Cargar secciones al montar el componente y cuando cambie el userRole
     useEffect(() => {
-        if (!roleLoading && userRole === "Administrador") {
-            console.log('Fetching secciones...');
+        if (!roleLoading && (userRole === "Administrador" || userRole === "Profesor")) {
+            console.log('Fetching secciones for role:', userRole);
             fetchSecciones().catch(err => {
                 console.error('Error fetching secciones:', err);
             });
         }
     }, [fetchSecciones, roleLoading, userRole]);
+
+    // Actualizar periodos disponibles cuando cambien las secciones (para profesores)
+    useEffect(() => {
+        if (userRole === "Profesor" && secciones.length > 0) {
+            const periodos = obtenerPeriodosDelProfesor();
+            setPeriodosDisponibles(periodos);
+            
+            // Si hay periodos y no hay uno seleccionado, seleccionar el más reciente
+            if (periodos.length > 0 && !periodoSeleccionado) {
+                setPeriodoSeleccionado(periodos[0]);
+            }
+        }
+    }, [secciones, userRole, periodoSeleccionado]);
 
     // Handlers
     const handleCreateSuccess = async (message) => {
@@ -88,7 +124,29 @@ const SeccionesPage = () => {
         navigate("/");
     };
 
-    // Componente de acceso denegado
+    // Handler para ver detalles de una sección (para profesores)
+    const handleViewSeccion = (seccion) => {
+        // Navegar a la página de detalles de la sección
+        navigate(`/secciones/${seccion.seccionId}`);
+    };
+
+    // Handler para cambio de periodo (solo para profesores)
+    const handlePeriodoChange = (nuevoPeriodo) => {
+        setPeriodoSeleccionado(nuevoPeriodo);
+    };
+
+    // Handler para refrescar datos (actualizado para profesores)
+    const handleRefreshSecciones = () => {
+        fetchSecciones().then(() => {
+            // Si es profesor, actualizar también los periodos disponibles
+            if (userRole === "Profesor") {
+                const periodos = obtenerPeriodosDelProfesor();
+                setPeriodosDisponibles(periodos);
+            }
+        });
+    };
+
+    // Componente de acceso denegado para estudiantes
     const AccessDeniedContent = () => (
         <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
             <Header title="Acceso Denegado" />
@@ -138,10 +196,11 @@ const SeccionesPage = () => {
                                 ¿Por qué no puedo acceder?
                             </h3>
                             <p className="text-blue-200 text-sm leading-relaxed">
-                                La página de <strong>Gestión de Secciones</strong> está restringida exclusivamente 
-                                para usuarios con rol de <strong className="text-green-400">Administrador</strong>. 
+                                El acceso a <strong>Secciones</strong> está disponible para usuarios con rol de 
+                                <strong className="text-green-400"> Administrador</strong> (gestión completa) o 
+                                <strong className="text-blue-400"> Profesor</strong> (solo sus secciones asignadas). 
                                 Tu rol actual es <strong className="text-yellow-400">{userRole}</strong>, 
-                                por lo que no tienes los permisos necesarios para crear, editar o eliminar secciones.
+                                por lo que no tienes acceso a esta funcionalidad.
                             </p>
                         </div>
 
@@ -181,8 +240,8 @@ const SeccionesPage = () => {
         </div>
     );
 
-    // Componente principal con contenido de secciones (solo para admins)
-    const SeccionesContent = () => (
+    // Componente para vista de administrador (gestión completa de secciones)
+    const SeccionesAdminContent = () => (
         <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
             <Header title="Gestión de Secciones" />
             
@@ -198,7 +257,7 @@ const SeccionesPage = () => {
                 {/* Header de la página */}
                 <SeccionHeader 
                     onCreateSeccion={handleCreateSeccion}
-                    onRefresh={fetchSecciones}
+                    onRefresh={handleRefreshSecciones}
                     loading={loading}
                 />
 
@@ -233,17 +292,48 @@ const SeccionesPage = () => {
         </div>
     );
 
+    // Componente para vista de profesor (solo sus secciones con selección de periodo)
+    const SeccionesProfesorContent = () => (
+        <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
+            <Header title="Mis Secciones" />
+            
+            <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                {/* Mensajes de alerta */}
+                <SeccionAlertMessages 
+                    successMessage={successMessage}
+                    errorMessage={error}
+                    onClearSuccess={handleClearSuccess}
+                    onRetry={handleRefreshSecciones}
+                />
+
+                {/* Vista específica para profesores con selección de periodo */}
+                <SeccionesProfesorView 
+                    secciones={secciones}
+                    loading={loading}
+                    onRefresh={handleRefreshSecciones}
+                    onViewSeccion={handleViewSeccion}
+                    periodosDisponibles={periodosDisponibles}
+                    periodoSeleccionado={periodoSeleccionado}
+                    onPeriodoChange={handlePeriodoChange}
+                />
+            </main>
+        </div>
+    );
+
     // Renderizado condicional basado en el estado de carga y rol
     if (roleLoading) {
         return <LoadingContent />;
     }
 
-    // Usar AdminOnly para mostrar contenido o acceso denegado
-    return (
-        <AdminOnly fallback={<AccessDeniedContent />}>
-            <SeccionesContent />
-        </AdminOnly>
-    );
+    // Decidir qué contenido mostrar según el rol
+    if (userRole === "Administrador") {
+        return <SeccionesAdminContent />;
+    } else if (userRole === "Profesor") {
+        return <SeccionesProfesorContent />;
+    } else {
+        // Para estudiantes o roles no reconocidos
+        return <AccessDeniedContent />;
+    }
 };
 
 export default SeccionesPage;
