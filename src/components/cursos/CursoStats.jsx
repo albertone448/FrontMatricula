@@ -1,38 +1,36 @@
 import { motion } from "framer-motion";
-import { useEffect } from "react";
 import { BookOpen, Clock } from "lucide-react";
 import StatCard from "../common/StatCard";
 import { useSecciones } from "../../hooks/useSecciones";
 
 const CursoStats = ({ cursos = [], loading }) => {
-    const { secciones, loading: seccionesLoading, fetchSecciones } = useSecciones();
-
-    useEffect(() => {
-        fetchSecciones();
-    }, [fetchSecciones]);
+    const { secciones, loading: seccionesLoading } = useSecciones();
 
     if (loading || seccionesLoading) {
-        return (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2 mb-8">
-                {[...Array(2)].map((_, i) => (
-                    <div key={i} className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl border border-gray-700 p-6 animate-pulse">
-                        <div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
-                        <div className="h-8 bg-gray-700 rounded w-2/3"></div>
-                    </div>
-                ))}
-            </div>
-        );    }
-    
-    // Calcular cursos activos - cursos únicos que tienen secciones
-    const cursosUnicos = secciones ? 
-        [...new Set(secciones.map(seccion => seccion.cursoId))] : 
-        [];
-    const cursosActivos = cursosUnicos.length;
+		return (
+			<div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-2 mb-8">
+				{[...Array(2)].map((_, i) => (
+					<div key={i} className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl border border-gray-700 p-6 animate-pulse">
+						<div className="h-4 bg-gray-700 rounded w-1/3 mb-4"></div>
+						<div className="h-8 bg-gray-700 rounded w-2/3"></div>
+					</div>
+				))}
+			</div>
+		);
+	}
+
+	// Calcular cursos activos (los que tienen secciones)
+	const cursosActivos = secciones && Array.isArray(secciones) ? 
+		new Set(secciones.filter(s => s?.cursoId).map(s => s.cursoId)).size : 
+		0;
+
+	console.log('Secciones:', secciones); // Debug
+	console.log('Cursos activos:', cursosActivos); // Debug
 
 	const stats = [
 		{
 			name: "Total Cursos",
-			value: cursos.length,
+			value: cursos.length || 0,
 			icon: BookOpen,
 			color: "#6366F1"
 		},
