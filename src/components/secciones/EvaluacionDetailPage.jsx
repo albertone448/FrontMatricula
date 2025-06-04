@@ -13,7 +13,9 @@ import {
     Save,
     CheckCircle,
     AlertCircle,
-    Percent
+    Percent,
+    Eye,
+    Calculator
 } from "lucide-react";
 import Header from "../common/Header";
 import { useEvaluaciones } from "../../hooks/useEvaluaciones";
@@ -21,6 +23,7 @@ import { useNotas } from "../../hooks/useNotas";
 import { useSecciones } from "../../hooks/useSecciones";
 import { useUserRole } from "../../contexts/UserRoleContext";
 import { authUtils } from "../../utils/authUtils";
+import VerNotasCompletasModal from "./VerNotasCompletasModal";
 
 const EstudianteNotaCard = ({ estudiante, evaluacion, onUpdateNota, loading }) => {
     const [nota, setNota] = useState(estudiante.nota?.total || "");
@@ -219,14 +222,16 @@ const EvaluacionDetailPage = () => {
     const { userRole } = useUserRole();
     const { getSeccionById } = useSecciones();
     const { fetchEvaluaciones, getTipoEvaluacionNombre } = useEvaluaciones();
-    const { fetchEstudiantesConNotas, updateNota } = useNotas();
+    const { fetchEstudiantesConNotas, updateNota, fetchNotasPorSeccion } = useNotas();
     
     const [seccion, setSeccion] = useState(null);
     const [evaluacion, setEvaluacion] = useState(null);
+    const [evaluaciones, setEvaluaciones] = useState([]); // Todas las evaluaciones de la sección
     const [estudiantes, setEstudiantes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
+    const [isNotasCompletasModalOpen, setIsNotasCompletasModalOpen] = useState(false);
 
     // Verificar permisos
     const canManageNotas = () => {
@@ -251,8 +256,10 @@ const EvaluacionDetailPage = () => {
                 setSeccion(seccionData);
 
                 // 2. Obtener información de las evaluaciones de la sección
-                const evaluaciones = await fetchEvaluaciones(parseInt(seccionId));
-                const evaluacionData = evaluaciones.find(e => e.evaluacionId === parseInt(evaluacionId));
+                const evaluacionesData = await fetchEvaluaciones(parseInt(seccionId));
+                setEvaluaciones(evaluacionesData); // Guardar todas las evaluaciones
+                
+                const evaluacionData = evaluacionesData.find(e => e.evaluacionId === parseInt(evaluacionId));
                 
                 if (!evaluacionData) {
                     throw new Error("Evaluación no encontrada");
@@ -321,6 +328,14 @@ const EvaluacionDetailPage = () => {
         } catch (error) {
             throw error;
         }
+    };
+
+    const handleVerNotasCompletas = () => {
+        setIsNotasCompletasModalOpen(true);
+    };
+
+    const handleCloseNotasCompletasModal = () => {
+        setIsNotasCompletasModalOpen(false);
     };
 
     // Verificar acceso
@@ -432,14 +447,27 @@ const EvaluacionDetailPage = () => {
                         Volver a la Sección
                     </button>
                     
-                    <button
-                        onClick={handleRefresh}
-                        disabled={loading}
-                        className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center"
-                    >
-                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                        Actualizar
-                    </button>
+                    <div className="flex items-center space-x-3">
+                        {/* Nuevo botón Ver Notas Completas */}
+                        <motion.button
+                            onClick={handleVerNotasCompletas}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center"
+                        >
+                            <Calculator className="w-4 h-4 mr-2" />
+                            Ver Notas Completas
+                        </motion.button>
+                        
+                        <button
+                            onClick={handleRefresh}
+                            disabled={loading}
+                            className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center"
+                        >
+                            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                            Actualizar
+                        </button>
+                    </div>
                 </motion.div>
 
                 {/* Header de la evaluación */}
@@ -558,6 +586,7 @@ const EvaluacionDetailPage = () => {
                                 <p>• Esta evaluación vale {evaluacion?.porcentaje}% de la nota final del curso.</p>
                                 <p>• Los cambios se guardan individualmente para cada estudiante.</p>
                                 <p>• Puedes actualizar las notas en cualquier momento.</p>
+                                <p>• Usa el botón "Ver Notas Completas" para ver el resumen de todas las evaluaciones.</p>
                                 {estadisticas.sinNota > 0 && (
                                     <p className="text-yellow-300">
                                         ⚠️ {estadisticas.sinNota} estudiante{estadisticas.sinNota > 1 ? 's' : ''} aún no tiene{estadisticas.sinNota > 1 ? 'n' : ''} nota asignada.
@@ -567,6 +596,16 @@ const EvaluacionDetailPage = () => {
                         </motion.div>
                     )}
                 </motion.div>
+
+                {/* Modal de Notas Completas */}
+                <VerNotasCompletasModal
+                    isOpen={isNotasCompletasModalOpen}
+                    onClose={handleCloseNotasCompletasModal}
+                    seccionId={seccionId}
+                    estudiantes={estudiantes}
+                    evaluaciones={evaluaciones}
+                    fetchNotasPorSeccion={fetchNotasPorSeccion}
+                />
             </main>
         </div>
     );
