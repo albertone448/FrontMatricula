@@ -6,10 +6,16 @@ import {
     Target, 
     TrendingUp,
     AlertCircle,
-    CheckCircle
+    CheckCircle,
+    Edit,
+    Trash2,
+    MoreVertical
 } from "lucide-react";
+import { useState } from "react";
 
-const EvaluacionCard = ({ evaluacion, index }) => {
+const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, canManageEvaluaciones }) => {
+    const [showMenu, setShowMenu] = useState(false);
+
     // Función para obtener el color basado en el tipo de evaluación
     const getTipoColor = (tipEvaluacionId) => {
         const colores = {
@@ -27,12 +33,24 @@ const EvaluacionCard = ({ evaluacion, index }) => {
 
     const colorClass = getTipoColor(evaluacion.tipEvaluacionId);
     
+    const handleEdit = () => {
+        setShowMenu(false);
+        onEdit(evaluacion);
+    };
+
+    const handleDelete = () => {
+        setShowMenu(false);
+        if (window.confirm(`¿Estás seguro de que deseas eliminar esta evaluación de ${evaluacion.tipoNombre}?`)) {
+            onDelete(evaluacion.evaluacionId);
+        }
+    };
+    
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1, duration: 0.3 }}
-            className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all duration-200"
+            className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700 hover:border-gray-600 transition-all duration-200 relative"
         >
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center">
@@ -48,13 +66,46 @@ const EvaluacionCard = ({ evaluacion, index }) => {
                         </p>
                     </div>
                 </div>
-                <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-400">
-                        {evaluacion.porcentaje}%
+                <div className="flex items-center">
+                    <div className="text-right mr-2">
+                        <div className="text-2xl font-bold text-blue-400">
+                            {evaluacion.porcentaje}%
+                        </div>
+                        <div className="text-xs text-gray-500">
+                            del total
+                        </div>
                     </div>
-                    <div className="text-xs text-gray-500">
-                        del total
-                    </div>
+                    
+                    {/* Menú de acciones */}
+                    {canManageEvaluaciones && (
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowMenu(!showMenu)}
+                                className="p-2 text-gray-400 hover:text-gray-300 rounded-lg hover:bg-gray-700 transition-colors duration-200"
+                            >
+                                <MoreVertical className="w-4 h-4" />
+                            </button>
+                            
+                            {showMenu && (
+                                <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 min-w-[120px]">
+                                    <button
+                                        onClick={handleEdit}
+                                        className="w-full px-3 py-2 text-left text-blue-400 hover:bg-gray-700 flex items-center text-sm"
+                                    >
+                                        <Edit className="w-4 h-4 mr-2" />
+                                        Editar
+                                    </button>
+                                    <button
+                                        onClick={handleDelete}
+                                        className="w-full px-3 py-2 text-left text-red-400 hover:bg-gray-700 flex items-center text-sm"
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        Eliminar
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -64,6 +115,14 @@ const EvaluacionCard = ({ evaluacion, index }) => {
                     <span>Sección: {evaluacion.seccionId}</span>
                 </div>
             </div>
+            
+            {/* Overlay para cerrar el menú cuando se hace clic fuera */}
+            {showMenu && (
+                <div 
+                    className="fixed inset-0 z-0" 
+                    onClick={() => setShowMenu(false)}
+                />
+            )}
         </motion.div>
     );
 };
@@ -146,6 +205,8 @@ const EvaluacionesList = ({
     loading, 
     porcentajeTotal, 
     onAgregarEvaluacion,
+    onEditarEvaluacion,
+    onEliminarEvaluacion,
     canManageEvaluaciones = true 
 }) => {
     if (loading) {
@@ -228,6 +289,9 @@ const EvaluacionesList = ({
                             key={evaluacion.evaluacionId}
                             evaluacion={evaluacion}
                             index={index}
+                            onEdit={onEditarEvaluacion}
+                            onDelete={onEliminarEvaluacion}
+                            canManageEvaluaciones={canManageEvaluaciones}
                         />
                     ))}
                 </div>
