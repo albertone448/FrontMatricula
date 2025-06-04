@@ -533,6 +533,7 @@ const SeccionDetailPage = () => {
                                 onEditarEvaluacion={handleEditarEvaluacion}
                                 onEliminarEvaluacion={handleEliminarEvaluacion}
                                 canManageEvaluaciones={canManageEvaluaciones()}
+                                seccionId={seccionId}
                             />
                         </motion.div>
                     )}
