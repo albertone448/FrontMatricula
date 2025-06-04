@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { 
     ClipboardList, 
     Plus, 
@@ -9,11 +10,13 @@ import {
     CheckCircle,
     Edit,
     Trash2,
-    MoreVertical
+    MoreVertical,
+    Users,
+    Eye
 } from "lucide-react";
 import { useState } from "react";
 
-const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, canManageEvaluaciones }) => {
+const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, onViewNotas, canManageEvaluaciones, seccionId }) => {
     const [showMenu, setShowMenu] = useState(false);
 
     // Función para obtener el color basado en el tipo de evaluación
@@ -44,6 +47,11 @@ const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, canManageEvaluaci
             onDelete(evaluacion.evaluacionId);
         }
     };
+
+    const handleViewNotas = () => {
+        setShowMenu(false);
+        onViewNotas(evaluacion);
+    };
     
     return (
         <motion.div
@@ -61,9 +69,6 @@ const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, canManageEvaluaci
                         <h3 className="text-lg font-semibold text-gray-100">
                             {evaluacion.tipoNombre}
                         </h3>
-                        <p className="text-sm text-gray-400">
-                            {evaluacion.tipoDescripcion}
-                        </p>
                     </div>
                 </div>
                 <div className="flex items-center">
@@ -87,7 +92,14 @@ const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, canManageEvaluaci
                             </button>
                             
                             {showMenu && (
-                                <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 min-w-[120px]">
+                                <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-10 min-w-[140px]">
+                                    <button
+                                        onClick={handleViewNotas}
+                                        className="w-full px-3 py-2 text-left text-green-400 hover:bg-gray-700 flex items-center text-sm"
+                                    >
+                                        <Users className="w-4 h-4 mr-2" />
+                                        Ver Notas
+                                    </button>
                                     <button
                                         onClick={handleEdit}
                                         className="w-full px-3 py-2 text-left text-blue-400 hover:bg-gray-700 flex items-center text-sm"
@@ -108,6 +120,21 @@ const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, canManageEvaluaci
                     )}
                 </div>
             </div>
+
+            {/* Botón principal para ver notas */}
+            {canManageEvaluaciones && (
+                <div className="mt-4 pt-4 border-t border-gray-700">
+                    <motion.button
+                        onClick={handleViewNotas}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center"
+                    >
+                        <Users className="w-4 h-4 mr-2" />
+                        Gestionar Notas
+                    </motion.button>
+                </div>
+            )}
 
             <div className="mt-4 pt-4 border-t border-gray-700">
                 <div className="flex justify-between items-center text-sm text-gray-400">
@@ -207,8 +234,15 @@ const EvaluacionesList = ({
     onAgregarEvaluacion,
     onEditarEvaluacion,
     onEliminarEvaluacion,
-    canManageEvaluaciones = true 
+    canManageEvaluaciones = true,
+    seccionId
 }) => {
+    const navigate = useNavigate();
+
+    const handleViewNotas = (evaluacion) => {
+        navigate(`/secciones/${seccionId}/evaluaciones/${evaluacion.evaluacionId}`);
+    };
+
     if (loading) {
         return (
             <div className="space-y-6">
@@ -291,7 +325,9 @@ const EvaluacionesList = ({
                             index={index}
                             onEdit={onEditarEvaluacion}
                             onDelete={onEliminarEvaluacion}
+                            onViewNotas={handleViewNotas}
                             canManageEvaluaciones={canManageEvaluaciones}
+                            seccionId={seccionId}
                         />
                     ))}
                 </div>
@@ -309,7 +345,8 @@ const EvaluacionesList = ({
                     <div className="text-blue-200 text-sm space-y-2">
                         <p>• El porcentaje total de todas las evaluaciones debe sumar exactamente 100%.</p>
                         <p>• Puedes crear múltiples evaluaciones del mismo tipo si es necesario.</p>
-                        <p>• Las evaluaciones configuradas aquí servirán para asignar notas posteriormente.</p>
+                        <p>• Haz clic en "Gestionar Notas" para asignar calificaciones a los estudiantes.</p>
+                        <p>• Las evaluaciones configuradas aquí servirán para calcular la nota final del curso.</p>
                         {porcentajeTotal < 100 && (
                             <p className="text-yellow-300">
                                 ⚠️ Faltan {100 - porcentajeTotal}% por asignar para completar el sistema de evaluación.
