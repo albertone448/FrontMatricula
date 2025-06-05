@@ -57,7 +57,7 @@ const SeccionesPage = () => {
         return periodos.sort().reverse(); // Más recientes primero
     };
 
-    // ✅ Nueva función para obtener periodos disponibles del estudiante
+    // Nueva función para obtener periodos disponibles del estudiante
     const obtenerPeriodosDelEstudiante = async () => {
         try {
             const userId = authUtils.getUserId();
@@ -102,7 +102,7 @@ const SeccionesPage = () => {
         }
     }, [fetchSecciones, roleLoading, userRole]);
 
-    // ✅ Actualizar periodos disponibles cuando cambien las secciones (para profesores) o al cargar (para estudiantes)
+    // Actualizar periodos disponibles cuando cambien las secciones (para profesores) o al cargar (para estudiantes)
     useEffect(() => {
         if (userRole === "Profesor" && secciones.length > 0) {
             const periodos = obtenerPeriodosDelProfesor();
@@ -171,7 +171,7 @@ const SeccionesPage = () => {
         navigate("/");
     };
 
-    // Handler para ver detalles de una sección (para profesores)
+    // ✅ Handler para ver detalles de una sección (ACTUALIZADO - para todos los roles que pueden acceder)
     const handleViewSeccion = (seccion) => {
         // Navegar a la página de detalles de la sección
         navigate(`/secciones/${seccion.seccionId}`);
@@ -295,7 +295,7 @@ const SeccionesPage = () => {
         </div>
     );
 
-    // Componente para vista de administrador (gestión completa de secciones)
+    // ✅ Componente para vista de administrador (ACTUALIZADO - ahora con capacidad de ver detalles)
     const SeccionesAdminContent = () => (
         <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
             <Header title="Gestión de Secciones" />
@@ -322,7 +322,7 @@ const SeccionesPage = () => {
                     loading={loading}
                 />
 
-                {/* Tabla de secciones */}
+                {/* Tabla de secciones - ACTUALIZADA para incluir la función de ver detalles */}
                 <SeccionesTable 
                     secciones={secciones}
                     loading={loading}
@@ -330,6 +330,8 @@ const SeccionesPage = () => {
                     onSearchChange={handleSearch}
                     onEditSeccion={handleEditSeccion}
                     onDeleteSeccion={handleDeleteSeccion}
+                    onViewSeccion={handleViewSeccion} // ✅ Nueva prop para ver detalles
+                    userRole={userRole} // ✅ Pasar el rol para mostrar botones apropiados
                 />
 
                 {/* Modal de creación/edición */}

@@ -13,7 +13,8 @@ import {
     Mail,
     Target,
     CheckCircle,
-    AlertCircle
+    AlertCircle,
+    Shield
 } from "lucide-react";
 import Header from "../common/Header";
 import { useSecciones } from "../../hooks/useSecciones";
@@ -80,21 +81,56 @@ const SeccionDetailPage = () => {
     const [evaluacionToEdit, setEvaluacionToEdit] = useState(null);
     const [isNotasCompletasModalOpen, setIsNotasCompletasModalOpen] = useState(false);
     
-    // ✅ Estados para estudiantes y datos del modal
+    // Estados para estudiantes y datos del modal
     const [estudiantes, setEstudiantes] = useState([]);
     const [inscritosCount, setInscritosCount] = useState(0);
 
-    // Verificar permisos para gestionar evaluaciones
+    // ✅ Verificar permisos para gestionar evaluaciones - ACTUALIZADO para incluir administradores
     const canManageEvaluaciones = () => {
-        if (userRole === "Administrador") return true;
+        if (userRole === "Administrador") {
+            console.log('✅ Administrador tiene acceso completo a gestionar evaluaciones');
+            return true;
+        }
         if (userRole === "Profesor" && seccion) {
             const userId = authUtils.getUserId();
-            return seccion.usuarioId === userId;
+            const hasAccess = seccion.usuarioId === userId;
+            console.log('🔍 Verificando acceso de profesor:', { 
+                userId, 
+                seccionUserId: seccion.usuarioId, 
+                hasAccess 
+            });
+            return hasAccess;
         }
+        console.log('❌ Sin permisos para gestionar evaluaciones:', { userRole });
         return false;
     };
 
-    // ✅ Función para cargar estudiantes de la sección
+    // ✅ Verificar si puede ver la sección - ACTUALIZADO para incluir administradores
+    const canViewSeccion = () => {
+        if (userRole === "Administrador") {
+            console.log('✅ Administrador puede ver cualquier sección');
+            return true;
+        }
+        if (userRole === "Profesor" && seccion) {
+            const userId = authUtils.getUserId();
+            const hasAccess = seccion.usuarioId === userId;
+            console.log('🔍 Verificando acceso de profesor a sección:', { 
+                userId, 
+                seccionUserId: seccion.usuarioId, 
+                hasAccess 
+            });
+            return hasAccess;
+        }
+        if (userRole === "Estudiante") {
+            // Los estudiantes pueden ver secciones donde estén inscritos (implementar lógica si es necesario)
+            console.log('ℹ️ Estudiante puede ver secciones (implementar verificación de inscripción)');
+            return true; // Por ahora permitimos, pero se puede restringir
+        }
+        console.log('❌ Sin permisos para ver la sección:', { userRole });
+        return false;
+    };
+
+    // Función para cargar estudiantes de la sección
     const fetchEstudiantes = async () => {
         try {
             if (!seccionId) return;
@@ -150,7 +186,7 @@ const SeccionDetailPage = () => {
         }
     };
 
-    // ✅ useEffect para cargar datos de la sección
+    // useEffect para cargar datos de la sección
     useEffect(() => {
         const fetchSeccionDetail = async () => {
             try {
@@ -162,6 +198,12 @@ const SeccionDetailPage = () => {
                 // Cargar datos de la sección
                 const seccionData = await getSeccionById(parseInt(seccionId));
                 setSeccion(seccionData);
+                
+                console.log('📄 Datos de sección cargados:', {
+                    seccionId: seccionData.seccionId,
+                    profesorId: seccionData.usuarioId,
+                    profesorNombre: seccionData.profesorNombre
+                });
                 
                 // Cargar evaluaciones
                 await fetchEvaluaciones(parseInt(seccionId));
@@ -184,7 +226,7 @@ const SeccionDetailPage = () => {
         }
     }, [seccionId, getSeccionById, fetchEvaluaciones]);
 
-    // ✅ useEffect separado para cargar estudiantes cuando cambien las dependencias
+    // useEffect separado para cargar estudiantes cuando cambien las dependencias
     useEffect(() => {
         if (seccionId && fetchInscripcionesPorSeccion && fetchUsuarioPorId) {
             fetchEstudiantes();
@@ -241,7 +283,7 @@ const SeccionDetailPage = () => {
         }
     };
 
-    // ✅ Función mejorada para manejar Ver Notas Completas
+    // Función mejorada para manejar Ver Notas Completas
     const handleVerNotasCompletas = async () => {
         console.log('🔍 Abriendo modal de notas completas');
         console.log('📊 Datos disponibles:', {
@@ -287,6 +329,7 @@ const SeccionDetailPage = () => {
 
     const porcentajeTotal = calcularPorcentajeTotal(evaluaciones);
 
+    // ✅ Verificar acceso antes de mostrar contenido
     if (loading && !seccion) {
         return (
             <div className='flex-1 overflow-auto relative z-10'>
@@ -325,11 +368,61 @@ const SeccionDetailPage = () => {
         );
     }
 
+    // ✅ Verificar si el usuario puede ver esta sección
+    if (!loading && seccion && !canViewSeccion()) {
+        return (
+            <div className='flex-1 overflow-auto relative z-10'>
+                <Header title="Acceso Denegado" />
+                <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-12"
+                    >
+                        <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-6 py-8 rounded-lg inline-block">
+                            <Shield className="w-12 h-12 mx-auto mb-4" />
+                            <p className="font-medium text-lg mb-2">No tienes permisos para acceder a esta sección</p>
+                            <p className="text-sm opacity-75">
+                                Solo el profesor asignado y los administradores pueden acceder a los detalles de esta sección.
+                            </p>
+                            <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                                <p className="text-xs text-gray-300">
+                                    <strong>Tu rol:</strong> {userRole} | 
+                                    <strong> Sección:</strong> {seccion.grupo} | 
+                                    <strong> Profesor:</strong> {seccion.profesorNombre}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleGoBack}
+                            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200"
+                        >
+                            Volver a Secciones
+                        </button>
+                    </motion.div>
+                </main>
+            </div>
+        );
+    }
+
     return (
         <div className='flex-1 overflow-auto relative z-10'>
             <Header title={`Sección ${seccion?.grupo}`} />
             
             <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                {/* ✅ Indicador de rol para administradores */}
+                {userRole === "Administrador" && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-4 py-2 rounded-lg text-sm flex items-center mb-6"
+                    >
+                        <Shield className="w-4 h-4 mr-2" />
+                        <span className="font-medium">Vista de Administrador:</span>
+                        <span className="ml-1">Tienes acceso completo para gestionar esta sección y todas sus evaluaciones.</span>
+                    </motion.div>
+                )}
+
                 {/* Mensaje de éxito */}
                 <AnimatePresence>
                     {successMessage && (
@@ -415,6 +508,13 @@ const SeccionDetailPage = () => {
                                     <span>Periodo {seccion?.periodo}</span>
                                     <span className="mx-2">•</span>
                                     <span>ID: {seccion?.seccionId}</span>
+                                    {userRole === "Administrador" && (
+                                        <>
+                                            <span className="mx-2">•</span>
+                                            <Shield className="w-4 h-4 mr-1 text-red-400" />
+                                            <span className="text-red-400">Admin</span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -493,21 +593,13 @@ const SeccionDetailPage = () => {
                             className="space-y-8"
                         >
                             {/* Información general */}
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                 <InfoCard
                                     icon={User}
                                     title="Profesor Asignado"
                                     value={seccion?.profesorNombre}
                                     color="text-green-400"
                                     subtitle={seccion?.profesor?.correo}
-                                />
-                                
-                                <InfoCard
-                                    icon={Clock}
-                                    title="Horario"
-                                    value={formatHorario(seccion?.horario)}
-                                    color="text-orange-400"
-                                    subtitle={seccion?.horario ? "Aula por confirmar" : null}
                                 />
                                 
                                 <InfoCard
@@ -655,38 +747,7 @@ const SeccionDetailPage = () => {
                                 )}
                             </motion.div>
 
-                            {/* Acciones adicionales */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.6 }}
-                                className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
-                            >
-                                <h2 className="text-xl font-bold text-gray-100 mb-4">Acciones Disponibles</h2>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <button className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
-                                        <Users className="w-5 h-5 mr-2" />
-                                        Ver Estudiantes
-                                    </button>
-                                    
-                                    <button className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
-                                        <Calendar className="w-5 h-5 mr-2" />
-                                        Gestionar Asistencia
-                                    </button>
-                                    
-                                    <button className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center">
-                                        <BookOpen className="w-5 h-5 mr-2" />
-                                        Material del Curso
-                                    </button>
-                                </div>
-                                
-                                <div className="mt-4 p-4 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg">
-                                    <p className="text-blue-300 text-sm">
-                                        <strong>Nota:</strong> Estas funcionalidades estarán disponibles en futuras actualizaciones del sistema.
-                                    </p>
-                                </div>
-                            </motion.div>
+                           
                         </motion.div>
                     )}
 
@@ -738,7 +799,7 @@ const SeccionDetailPage = () => {
                     updateEvaluacion={updateEvaluacion}
                 />
 
-                {/* ✅ Modal de Notas Completas - Ahora con todos los props necesarios */}
+                {/* Modal de Notas Completas - Ahora con todos los props necesarios */}
                 <VerNotasCompletasModal
                     isOpen={isNotasCompletasModalOpen}
                     onClose={handleCloseNotasCompletasModal}

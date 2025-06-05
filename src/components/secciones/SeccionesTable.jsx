@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Edit, Trash2, Folders, ChevronLeft, ChevronRight, User, BookOpen } from "lucide-react";
+import { Search, Edit, Trash2, Folders, ChevronLeft, ChevronRight, User, BookOpen, Eye } from "lucide-react";
 
 const EstadoBadge = ({ estado }) => {
     const colorClasses = {
@@ -17,24 +17,49 @@ const EstadoBadge = ({ estado }) => {
     );
 };
 
-const SeccionActions = ({ seccion, onEdit, onDelete }) => (
-    <div className="flex space-x-2">
-        <button 
-            onClick={() => onEdit(seccion)}
-            className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
-            title="Editar sección"
-        >
-            <Edit className="w-4 h-4" />
-        </button>
-        <button 
-            onClick={() => onDelete(seccion)}
-            className="text-red-400 hover:text-red-300 transition-colors duration-200"
-            title="Eliminar sección"
-        >
-            <Trash2 className="w-4 h-4" />
-        </button>
-    </div>
-);
+// ✅ Componente de acciones actualizado para incluir "Ver Detalles"
+const SeccionActions = ({ seccion, onEdit, onDelete, onView, userRole }) => {
+    const canEdit = userRole === "Administrador";
+    const canDelete = userRole === "Administrador";
+    const canView = userRole === "Administrador" || userRole === "Profesor";
+
+    return (
+        <div className="flex space-x-2">
+            {/* ✅ Botón Ver Detalles - visible para Administradores y Profesores */}
+            {canView && (
+                <button 
+                    onClick={() => onView(seccion)}
+                    className="text-green-400 hover:text-green-300 transition-colors duration-200"
+                    title="Ver detalles y gestionar evaluaciones"
+                >
+                    <Eye className="w-4 h-4" />
+                </button>
+            )}
+            
+            {/* ✅ Botón Editar - solo para Administradores */}
+            {canEdit && (
+                <button 
+                    onClick={() => onEdit(seccion)}
+                    className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                    title="Editar sección"
+                >
+                    <Edit className="w-4 h-4" />
+                </button>
+            )}
+            
+            {/* ✅ Botón Eliminar - solo para Administradores */}
+            {canDelete && (
+                <button 
+                    onClick={() => onDelete(seccion)}
+                    className="text-red-400 hover:text-red-300 transition-colors duration-200"
+                    title="Eliminar sección"
+                >
+                    <Trash2 className="w-4 h-4" />
+                </button>
+            )}
+        </div>
+    );
+};
 
 const LoadingTable = () => (
     <div className="flex justify-center items-center py-12">
@@ -134,13 +159,16 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPe
     );
 };
 
+// ✅ Componente principal actualizado con nuevas props
 const SeccionesTable = ({ 
     secciones, 
     loading, 
     searchTerm, 
     onSearchChange, 
     onEditSeccion, 
-    onDeleteSeccion 
+    onDeleteSeccion,
+    onViewSeccion = null, // ✅ Nueva prop para ver detalles
+    userRole = "Estudiante" // ✅ Nueva prop para determinar permisos
 }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
@@ -203,6 +231,13 @@ const SeccionesTable = ({
         if (!seccion.cuposMax) return 'Cerrada';
         return 'Disponible';
     };
+
+    // ✅ Función para manejar el clic en "Ver Detalles"
+    const handleViewSeccion = useCallback((seccion) => {
+        if (onViewSeccion) {
+            onViewSeccion(seccion);
+        }
+    }, [onViewSeccion]);
 
     return (
         <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl border border-gray-700">
@@ -328,12 +363,14 @@ const SeccionesTable = ({
                                                         <EstadoBadge estado={computeSeccionStatus(seccion)} />
                                                     </td>
                                                     
-                                                    {/* Acciones */}
+                                                    {/* ✅ Acciones - Ahora incluye el botón Ver Detalles */}
                                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                                         <SeccionActions
                                                             seccion={seccion}
                                                             onEdit={onEditSeccion}
                                                             onDelete={onDeleteSeccion}
+                                                            onView={handleViewSeccion}
+                                                            userRole={userRole}
                                                         />
                                                     </td>
                                                 </motion.tr>
