@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { authUtils } from "../utils/authUtils";
 import api from "../services/apiConfig";
+import SeccionesTable from "../components/secciones/SeccionesTable";
 
 export const useInscripciones = () => {
     const [loading, setLoading] = useState(true);
@@ -11,7 +12,7 @@ export const useInscripciones = () => {
     const [seccionesDisponibles, setSeccionesDisponibles] = useState([]);
     const [totalCreditos, setTotalCreditos] = useState(0);
     const [modalRetirarOpen, setModalRetirarOpen] = useState(false);
-    const [seccionSeleccionada, setSeccionSeleccionada] = useState(null);
+    const [inscripcionParaRetiro, setInscripcionParaRetiro] = useState(null);
 
     // Función para obtener los periodos disponibles para inscripción
     const fetchPeriodosDisponibles = async () => {
@@ -157,18 +158,38 @@ export const useInscripciones = () => {
     };
 
     // Función para retirar una materia
-    const handleRetirarMateria = async (inscripcionId, nombreCurso) => {
-        // Encontrar la sección para mostrar más detalles
-        const seccion = seccionesDisponibles.find(s => s.inscripcionId === inscripcionId);
-        if (!seccion) return;
+    const handleRetirarMateria = async (inscripcionId, curso, horario, grupo,seccionId) => {
+        if (!inscripcionId) { 
+            console.error("❌ handleRetirarMateria: inscripcionId no fue proporcionado.");
+            // Optionally, set an error message for the user
+            // setError("No se pudo iniciar el proceso de retiro: ID de inscripción faltante.");
+            return;
+        }
         
-        setSeccionSeleccionada(seccion);
+        // Log the received data for clarity during debugging
+        console.log("ℹ️ handleRetirarMateria: Preparando para retirar inscripción.", { inscripcionId, curso, horario, grupo });
+
+        setInscripcionParaRetiro({
+            inscripcionId: inscripcionId, // This is the direct ID of the enrollment
+            curso: curso,                 // curso object for modal display
+            seccionId:seccionId,     // Assuming inscripcionId is the section ID
+            horario: horario,             // horario object for modal display
+            grupo: grupo                  // grupo string for modal display
+        });
         setModalRetirarOpen(true);
     };
 
     // Función que se ejecuta cuando se confirma el retiro en el modal
     const handleConfirmRetiro = async () => {
-        if (!seccionSeleccionada) return;
+        if (!inscripcionParaRetiro || !inscripcionParaRetiro.inscripcionId) {
+            console.error("❌ Error: No hay inscripción seleccionada para retirar o falta inscripcionId.", inscripcionParaRetiro);
+            setError("Error: No se pudo identificar la inscripción a retirar.");
+            setModalRetirarOpen(false);
+            setInscripcionParaRetiro(null);
+            return;
+        }
+
+        console.log("ℹ️ Intentando retirar inscripción con ID:", inscripcionParaRetiro.inscripcionId);
 
         try {
             setLoading(true);
@@ -176,19 +197,34 @@ export const useInscripciones = () => {
             setSuccessMessage("");
 
             // Eliminar la inscripción
-            await api.delete(`Inscripcion/DeleteInscripcion/${seccionSeleccionada.inscripcionId}`);
+            await api.delete('Inscripcion/DeleteInscripcion', { 
+                data: { inscripcionId: inscripcionParaRetiro.inscripcionId,
+                    usuarioId: authUtils.getUserId(),  // Asegurarse de pasar el ID del usuario
+                    seccionId: inscripcionParaRetiro.seccionId  // Asegurarse de pasar el ID de la sección
+                 } 
+            });
 
-            setSuccessMessage(`Has retirado exitosamente ${seccionSeleccionada.curso.nombre}`);
+            setSuccessMessage(`Has retirado exitosamente ${inscripcionParaRetiro.curso.nombre}`);
+            console.log("✅ Inscripción retirada exitosamente.");
             
             // Recargar las secciones para actualizar el estado
             await fetchSeccionesDisponibles(periodoSeleccionado);
         } catch (error) {
-            console.error("❌ Error al retirar materia:", error);
+            console.error("❌ Error al retirar materia (completo):", error);
+            if (error.response) {
+                console.error("❌ Error response data:", error.response.data);
+                console.error("❌ Error response status:", error.response.status);
+                console.error("❌ Error response headers:", error.response.headers);
+            } else if (error.request) {
+                console.error("❌ Error request:", error.request);
+            } else {
+                console.error("❌ Error message:", error.message);
+            }
             setError(error.response?.data?.message || error.message || "Error al retirar la materia");
         } finally {
             setLoading(false);
             setModalRetirarOpen(false);
-            setSeccionSeleccionada(null);
+            setInscripcionParaRetiro(null);
         }
     };
 
@@ -220,12 +256,12 @@ export const useInscripciones = () => {
         seccionesDisponibles,
         totalCreditos,
         modalRetirarOpen,
-        seccionSeleccionada,
+        inscripcionParaRetiro,
         setError,
         setPeriodosDisponibles,
         setPeriodoSeleccionado,
         setModalRetirarOpen,
-        setSeccionSeleccionada,
+        setInscripcionParaRetiro,
         fetchPeriodosDisponibles,
         fetchSeccionesDisponibles,
         handleInscribirMateria,

@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { BookOpen } from "lucide-react";
 
 export const SeccionesTable = ({ 
     secciones, 
@@ -48,8 +49,12 @@ export const SeccionesTable = ({
                                     seccion.inscrito ? 'bg-blue-900 bg-opacity-10' : ''
                                 }`}
                             >
-                                {/* Información del curso */}
-                                <td className="px-6 py-4 whitespace-nowrap">
+
+                            <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                    <div>
+                                        <BookOpen className="w-4 h-4 text-blue-400 mr-2" />
+                                    </div>
                                     <div>
                                         <div className="text-sm font-medium text-gray-100">
                                             {seccion.curso.nombre}
@@ -58,9 +63,10 @@ export const SeccionesTable = ({
                                             {seccion.curso.codigo}
                                         </div>
                                     </div>
-                                </td>
+                                </div>
+                            </td>
 
-                                {/* Grupo */}
+                            {/* Grupo */}
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                                     {seccion.grupo}
                                 </td>
@@ -113,11 +119,11 @@ export const SeccionesTable = ({
                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button
                                         onClick={() => seccion.inscrito 
-                                            ? handleRetirarMateria(seccion.inscripcionId, seccion.curso.nombre)
+                                            ? handleRetirarMateria(seccion.inscripcionId, seccion.curso, seccion.horario, seccion.grupo, seccion.seccionId)
                                             : handleInscribirMateria(seccion.seccionId, seccion.curso.nombre)
                                         }
                                         disabled={loading}
-                                        className={`px-4 py-2 rounded-lg font-medium transition duration-200 ${
+                                        className={`w-20 text-center px-4 py-2 rounded-lg font-medium transition duration-200 ${
                                             loading ? "opacity-50 cursor-not-allowed " : ""
                                         }${
                                             seccion.inscrito

@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import { useUserRole } from "../contexts/UserRoleContext";
 import Header from "../components/common/Header";
 import LoadingSpinner from "../components/horarios/LoadingSpinner";
-import ErrorMessage from "../components/horarios/ErrorMessage";
 import { ConfirmRetirarModal } from "../components/inscripciones/ConfirmRetirarModal";
 import { useInscripciones } from "../hooks/useInscripciones";
 import { useProfile } from "../hooks/useProfile";
@@ -11,6 +10,7 @@ import { CreditosSummary } from "../components/inscripciones/CreditosSummary";
 import { InscripcionesFilter } from "../components/inscripciones/InscripcionesFilter";
 import { SeccionesTable } from "../components/inscripciones/SeccionesTable";
 import { PeriodoSelector } from "../components/inscripciones/PeriodoSelector";
+import {RefreshCw} from "lucide-react";
 
 const InscripcionesPage = () => {
     const { userRole, loading: roleLoading } = useUserRole();
@@ -29,11 +29,11 @@ const InscripcionesPage = () => {
         seccionesDisponibles,
         totalCreditos,
         modalRetirarOpen,
-        seccionSeleccionada,
+        inscripcionParaRetiro, // Changed from seccionSeleccionada
         setPeriodosDisponibles,
         setPeriodoSeleccionado,
         setModalRetirarOpen,
-        setSeccionSeleccionada,
+        setInscripcionParaRetiro, // Changed from setSeccionSeleccionada
         fetchPeriodosDisponibles,
         fetchSeccionesDisponibles,
         handleInscribirMateria,
@@ -109,23 +109,47 @@ const InscripcionesPage = () => {
         <div className='flex-1 overflow-auto relative z-10'>
             <Header title='Inscripciones' />
             <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
-                <ConfirmRetirarModal
-                    open={modalRetirarOpen}
-                    onClose={() => {
-                        setModalRetirarOpen(false);
-                        setSeccionSeleccionada(null);
-                    }}
-                    onConfirm={handleConfirmRetiro}
-                    seccion={seccionSeleccionada}
-                />
+                {inscripcionParaRetiro && (
+                    <ConfirmRetirarModal
+                        open={modalRetirarOpen}
+                        onClose={() => {
+                            setModalRetirarOpen(false);
+                            setInscripcionParaRetiro(null); // Changed from setSeccionSeleccionada
+                        }}
+                        onConfirm={handleConfirmRetiro}
+                        // Pass specific details from inscripcionParaRetiro to the modal
+                        // Assuming ConfirmRetirarModal expects props like curso, horario, grupo
+                        curso={inscripcionParaRetiro.curso} 
+                        horario={inscripcionParaRetiro.horario}
+                        grupo={inscripcionParaRetiro.grupo}
+                        // If ConfirmRetirarModal expects the whole object, you might pass it as a prop e.g., inscripcionData={inscripcionParaRetiro}
+                    />
+                )}
 
                 {loading && <LoadingSpinner message="Cargando secciones disponibles..." />}
                 
                 {error && (
-                    <ErrorMessage 
-                        message={error} 
-                        onRetry={handleRefresh}
-                    />
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4 mb-6"
+                    >
+                        <p className={`text-red-400 text-center ${handleRefresh ? 'mb-3' : ''}`}>{error}</p>
+                        {handleRefresh && (
+                            <div className="text-center"> {/* This div centers the button */}
+                                <label
+                                    onClick={handleRefresh}
+                                    className="px-4 py-2 text-sm  hover:bg-opacity-40 text-red-200 hover:text-red-100 rounded-md transition-colors duration-150"
+                                >
+                                    <div className="flex items-center justify-center space-x-5">
+										<RefreshCw className="w-4 h-4 mr-2"> </RefreshCw>
+										Intentar de nuevo
+									</div>
+                                </label>
+                            </div>
+                        )}
+                    </motion.div>
                 )}
 
                 {successMessage && (
@@ -176,19 +200,7 @@ const InscripcionesPage = () => {
                     handleRetirarMateria={handleRetirarMateria}
                 />
 
-                {modalRetirarOpen && seccionSeleccionada && (
-                    <ConfirmRetirarModal
-                        open={modalRetirarOpen}
-                        onClose={() => setModalRetirarOpen(false)}
-                        onConfirm={() => {
-                            handleRetirarMateria(seccionSeleccionada.inscripcionId, seccionSeleccionada.curso.nombre);
-                            setModalRetirarOpen(false);
-                        }}
-                        curso={seccionSeleccionada.curso}
-                        horario={seccionSeleccionada.horario}
-                        grupo={seccionSeleccionada.grupo}
-                    />
-                )}
+              
             </main>
         </div>
     );
