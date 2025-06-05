@@ -18,11 +18,13 @@ import {
 import Header from "../common/Header";
 import { useSecciones } from "../../hooks/useSecciones";
 import { useEvaluaciones } from "../../hooks/useEvaluaciones";
+import { useNotas } from "../../hooks/useNotas"; // ✅ Importar useNotas
 import { useUserRole } from "../../contexts/UserRoleContext";
 import { authUtils } from "../../utils/authUtils";
 import EvaluacionesList from "./EvaluacionesList";
 import CrearEvaluacionModal from "./CrearEvaluacionModal";
 import EditarEvaluacionModal from "./EditarEvaluacionModal";
+import VerNotasCompletasModal from "./VerNotasCompletasModal"; // ✅ Importar el modal
 
 const InfoCard = ({ icon: Icon, title, value, color = "text-blue-400", subtitle = null }) => (
     <motion.div
@@ -48,17 +50,7 @@ const SeccionDetailPage = () => {
     const navigate = useNavigate();
     const { userRole } = useUserRole();
     const { getSeccionById } = useSecciones();
-    const [seccion, setSeccion] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
-    const [successMessage, setSuccessMessage] = useState("");
-    const [activeTab, setActiveTab] = useState("info"); // "info" o "evaluaciones"
-    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [evaluacionToEdit, setEvaluacionToEdit] = useState(null);
-
-    // Hook de evaluaciones
-    const {
+    const { 
         evaluaciones,
         loading: evaluacionesLoading,
         error: evaluacionesError,
@@ -71,6 +63,19 @@ const SeccionDetailPage = () => {
         validarPorcentaje,
         contarTipoEvaluacion
     } = useEvaluaciones();
+    
+    // ✅ Agregar hook de notas
+    const { fetchNotasPorSeccion } = useNotas();
+    
+    const [seccion, setSeccion] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+    const [activeTab, setActiveTab] = useState("info"); // "info" o "evaluaciones"
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [evaluacionToEdit, setEvaluacionToEdit] = useState(null);
+    const [isNotasCompletasModalOpen, setIsNotasCompletasModalOpen] = useState(false); // ✅ Estado para el modal
 
     // Verificar permisos para gestionar evaluaciones
     const canManageEvaluaciones = () => {
@@ -144,6 +149,11 @@ const SeccionDetailPage = () => {
         }
     };
 
+    // ✅ Función para manejar Ver Notas Completas
+    const handleVerNotasCompletas = () => {
+        setIsNotasCompletasModalOpen(true);
+    };
+
     const handleCloseCreateModal = () => {
         setIsCreateModalOpen(false);
     };
@@ -151,6 +161,11 @@ const SeccionDetailPage = () => {
     const handleCloseEditModal = () => {
         setIsEditModalOpen(false);
         setEvaluacionToEdit(null);
+    };
+
+    // ✅ Función para cerrar modal de notas completas
+    const handleCloseNotasCompletasModal = () => {
+        setIsNotasCompletasModalOpen(false);
     };
 
     const handleEvaluacionSuccess = (message) => {
@@ -532,6 +547,7 @@ const SeccionDetailPage = () => {
                                 onAgregarEvaluacion={handleAgregarEvaluacion}
                                 onEditarEvaluacion={handleEditarEvaluacion}
                                 onEliminarEvaluacion={handleEliminarEvaluacion}
+                                onVerNotasCompletas={handleVerNotasCompletas} // ✅ Pasar la función
                                 canManageEvaluaciones={canManageEvaluaciones()}
                                 seccionId={seccionId}
                             />
@@ -562,6 +578,15 @@ const SeccionDetailPage = () => {
                     evaluacionesExistentes={evaluaciones}
                     validarPorcentaje={validarPorcentaje}
                     updateEvaluacion={updateEvaluacion}
+                />
+
+                {/* ✅ Modal de Notas Completas */}
+                <VerNotasCompletasModal
+                    isOpen={isNotasCompletasModalOpen}
+                    onClose={handleCloseNotasCompletasModal}
+                    seccionId={seccionId}
+                    evaluaciones={evaluaciones}
+                    fetchNotasPorSeccion={fetchNotasPorSeccion}
                 />
             </main>
         </div>

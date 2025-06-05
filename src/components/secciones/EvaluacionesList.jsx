@@ -12,7 +12,8 @@ import {
     Trash2,
     MoreVertical,
     Users,
-    Eye
+    Eye,
+    Calculator
 } from "lucide-react";
 import { useState } from "react";
 
@@ -234,6 +235,7 @@ const EvaluacionesList = ({
     onAgregarEvaluacion,
     onEditarEvaluacion,
     onEliminarEvaluacion,
+    onVerNotasCompletas, // ✅ Nueva prop para manejar ver notas completas
     canManageEvaluaciones = true,
     seccionId
 }) => {
@@ -271,16 +273,33 @@ const EvaluacionesList = ({
                     </p>
                 </div>
                 
+                {/* ✅ Contenedor de botones actualizado */}
                 {canManageEvaluaciones && (
-                    <motion.button
-                        onClick={onAgregarEvaluacion}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center mt-4 sm:mt-0"
-                    >
-                        <Plus className="w-5 h-5 mr-2" />
-                        Agregar Evaluación
-                    </motion.button>
+                    <div className="flex items-center space-x-3 mt-4 sm:mt-0">
+                        {/* ✅ Botón Ver Notas Completas - solo visible si hay evaluaciones */}
+                        {evaluaciones.length > 0 && (
+                            <motion.button
+                                onClick={onVerNotasCompletas}
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center"
+                            >
+                                <Calculator className="w-5 h-5 mr-2" />
+                                Ver Notas Completas
+                            </motion.button>
+                        )}
+                        
+                        {/* ✅ Botón Agregar Evaluación */}
+                        <motion.button
+                            onClick={onAgregarEvaluacion}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200 flex items-center"
+                        >
+                            <Plus className="w-5 h-5 mr-2" />
+                            Agregar Evaluación
+                        </motion.button>
+                    </div>
                 )}
             </div>
 
@@ -346,6 +365,7 @@ const EvaluacionesList = ({
                         <p>• El porcentaje total de todas las evaluaciones debe sumar exactamente 100%.</p>
                         <p>• Puedes crear múltiples evaluaciones del mismo tipo si es necesario.</p>
                         <p>• Haz clic en "Gestionar Notas" para asignar calificaciones a los estudiantes.</p>
+                        <p>• Usa "Ver Notas Completas" para ver el resumen consolidado de todas las evaluaciones.</p>
                         <p>• Las evaluaciones configuradas aquí servirán para calcular la nota final del curso.</p>
                         {porcentajeTotal < 100 && (
                             <p className="text-yellow-300">
