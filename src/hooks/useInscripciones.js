@@ -68,22 +68,89 @@ export const useInscripciones = () => {
             const cursosResponses = await Promise.all(cursosPromises);
             const cursos = cursosResponses.map(response => response.data);
 
+            // 5.1. Obtener información de los profesores (using seccion.usuarioId as the link to the professor)
+            const profesorUserIds = [...new Set(seccionesFiltradas.map(s => s.usuarioId).filter(Boolean))]; 
+            
+            let profesoresMap = {};
+            if (profesorUserIds.length > 0) {
+                const profesoresPromises = profesorUserIds.map(id =>
+                    api.get(`Usuario/GetUsuarioPorId/${id}`).catch(err => {
+                        // console.warn(`Failed to load professor (user) with ID ${id}:`, err); // Removed log
+                        return null; 
+                    })
+                );
+                const profesoresResponses = await Promise.all(profesoresPromises);
+                // console.log("ℹ️ Raw profesoresResponses:", profesoresResponses); // Removed log
+
+                profesoresResponses.forEach(response => {
+                    if (response && response.data) { 
+                        profesoresMap[response.data.usuarioId] = response.data;
+                    }
+                });
+                // console.log("ℹ️ Populated profesoresMap:", profesoresMap); // Removed log
+            }
+
+            // Adicional: Obtener notas para las inscripciones actuales del estudiante
+            let notasMap = {}; 
+            if (inscripcionesActuales && inscripcionesActuales.length > 0) {
+                const notasPromises = inscripcionesActuales.map((insc, idx) => { 
+                    if (insc.inscripcionId) {
+                        return api.get(`Nota/GetNotasPorInscripcion/${insc.inscripcionId}`)
+                            .then(response => {
+                                // if (idx < 3) { // Removed log
+                                //     console.log(`ℹ️ Notas response for inscripcionId ${insc.inscripcionId}:`, response.data);
+                                // }
+                                return { 
+                                    inscripcionId: insc.inscripcionId, 
+                                    tieneNotas: Array.isArray(response.data) && response.data.length > 0 
+                                };
+                            })
+                            .catch(err => {
+                                // console.warn(`Failed to load notas for inscripcionId ${insc.inscripcionId}:`, err); // Removed log
+                                return { inscripcionId: insc.inscripcionId, tieneNotas: false }; 
+                            });
+                    }
+                    return Promise.resolve({ inscripcionId: null, tieneNotas: false });
+                });
+                const notasResults = await Promise.all(notasPromises);
+                notasResults.forEach(result => {
+                    if (result.inscripcionId) {
+                        notasMap[result.inscripcionId] = result.tieneNotas;
+                    }
+                });
+                // console.log("ℹ️ Populated notasMap:", notasMap); // Removed log
+            }
+
             // 6. Procesar y combinar la información
             const seccionesProcesadas = seccionesFiltradas.map((seccion, index) => {
                 const curso = cursos[index];
                 const inscripcion = inscripcionesActuales.find(i => i.seccionId === seccion.seccionId);
                 const horario = todosLosHorarios.find(h => h.horarioId === seccion.horarioId);
+                const profesor = seccion.usuarioId ? profesoresMap[seccion.usuarioId] : null;
+                const estaInscrito = !!inscripcion;
+                const inscripcionIdActual = inscripcion?.inscripcionId;
                 
+                let lookupNotas = false;
+                if (estaInscrito && inscripcionIdActual) {
+                    lookupNotas = notasMap[inscripcionIdActual] || false;
+                }
+                const tieneNotasParaEstaSeccion = lookupNotas;
+
+                // Removed processing logs for sections
+
                 return {
                     ...seccion,
                     curso,
                     horario,
-                    inscrito: !!inscripcion,
-                    inscripcionId: inscripcion?.inscripcionId
+                    profesor, 
+                    inscrito: estaInscrito,
+                    inscripcionId: inscripcionIdActual,
+                    tieneNotas: tieneNotasParaEstaSeccion 
                 };
-            }).filter(item => item.curso && item.horario); // Solo incluir secciones con información completa
+            }).filter(item => item.curso && item.horario); 
 
             setSeccionesDisponibles(seccionesProcesadas);
+            // Removed log for final seccionesDisponibles
         } catch (error) {
             console.error("❌ Error obteniendo secciones disponibles:", error);
             setError(error.response?.data?.message || error.message || "Error al cargar las secciones");
@@ -93,7 +160,7 @@ export const useInscripciones = () => {
     };
 
     // Validar antes de inscribir
-    const validarInscripcion = (seccion) => {
+    const validarInscripcion = (seccion, userCarrera) => { // Added userCarrera parameter
         // Verificar límite de créditos (máximo 18 créditos por periodo)
         const creditosNuevos = totalCreditos + (seccion.curso?.creditos || 0);
         if (creditosNuevos > 18) {
@@ -113,11 +180,17 @@ export const useInscripciones = () => {
             return false;
         }
 
+        // Verificar si la carrera de la sección es permitida para el usuario
+        if (seccion.carrera && seccion.carrera !== "Carrera Libre" && seccion.carrera !== userCarrera) {
+            setError(`Solo puedes inscribir materias de tu carrera (${userCarrera}) o de Carrera Libre.`);
+            return false;
+        }
+
         return true;
     };
 
     // Función para inscribir una materia
-    const handleInscribirMateria = async (seccionId, nombreCurso) => {
+    const handleInscribirMateria = async (seccionId, nombreCurso, userCarrera) => { // Added userCarrera parameter
         try {
             setLoading(true);
             setError("");
@@ -135,7 +208,7 @@ export const useInscripciones = () => {
             }
 
             // Validar la inscripción
-            if (!validarInscripcion(seccion)) {
+            if (!validarInscripcion(seccion, userCarrera)) { // Pass userCarrera
                 return;
             }
 
@@ -158,23 +231,35 @@ export const useInscripciones = () => {
     };
 
     // Función para retirar una materia
-    const handleRetirarMateria = async (inscripcionId, curso, horario, grupo,seccionId) => {
+    const handleRetirarMateria = async (inscripcionId, curso, horario, grupo) => {
         if (!inscripcionId) { 
             console.error("❌ handleRetirarMateria: inscripcionId no fue proporcionado.");
-            // Optionally, set an error message for the user
-            // setError("No se pudo iniciar el proceso de retiro: ID de inscripción faltante.");
             return;
         }
         
-        // Log the received data for clarity during debugging
-        console.log("ℹ️ handleRetirarMateria: Preparando para retirar inscripción.", { inscripcionId, curso, horario, grupo });
+        const seccionCompleta = seccionesDisponibles.find(s => s.inscripcionId === inscripcionId);
+
+        if (!seccionCompleta) {
+            console.error("❌ handleRetirarMateria: No se encontró la sección/inscripción completa con ID:", inscripcionId);
+            // Fallback logic might be needed if seccionCompleta is essential and not found
+            // For now, setting an error and returning if critical info is missing.
+            setError("No se pudo encontrar la información de la sección para retirar.");
+            return;
+        }
+
+        // Verificar si la sección tiene notas antes de proceder
+        if (seccionCompleta.tieneNotas) {
+            setError("No se puede retirar una materia que ya tiene notas registradas.");
+            setSuccessMessage(""); // Clear any previous success message
+            return; // No abrir el modal
+        }
 
         setInscripcionParaRetiro({
-            inscripcionId: inscripcionId, // This is the direct ID of the enrollment
-            curso: curso,                 // curso object for modal display
-            seccionId:seccionId,     // Assuming inscripcionId is the section ID
-            horario: horario,             // horario object for modal display
-            grupo: grupo                  // grupo string for modal display
+            inscripcionId: seccionCompleta.inscripcionId,
+            curso: seccionCompleta.curso,
+            horario: seccionCompleta.horario,
+            grupo: seccionCompleta.grupo,
+            profesor: seccionCompleta.profesor // Store complete profesor object
         });
         setModalRetirarOpen(true);
     };
@@ -182,14 +267,12 @@ export const useInscripciones = () => {
     // Función que se ejecuta cuando se confirma el retiro en el modal
     const handleConfirmRetiro = async () => {
         if (!inscripcionParaRetiro || !inscripcionParaRetiro.inscripcionId) {
-            console.error("❌ Error: No hay inscripción seleccionada para retirar o falta inscripcionId.", inscripcionParaRetiro);
+            // console.error("❌ Error: No hay inscripción seleccionada para retirar o falta inscripcionId.", inscripcionParaRetiro); // Kept this error log as it indicates a potential bug state
             setError("Error: No se pudo identificar la inscripción a retirar.");
             setModalRetirarOpen(false);
             setInscripcionParaRetiro(null);
             return;
         }
-
-        console.log("ℹ️ Intentando retirar inscripción con ID:", inscripcionParaRetiro.inscripcionId);
 
         try {
             setLoading(true);
@@ -199,13 +282,13 @@ export const useInscripciones = () => {
             // Eliminar la inscripción
             await api.delete('Inscripcion/DeleteInscripcion', { 
                 data: { inscripcionId: inscripcionParaRetiro.inscripcionId,
-                    usuarioId: authUtils.getUserId(),  // Asegurarse de pasar el ID del usuario
-                    seccionId: inscripcionParaRetiro.seccionId  // Asegurarse de pasar el ID de la sección
+                    usuarioId: authUtils.getUserId(),  
+                    seccionId: inscripcionParaRetiro.seccionId  
                  } 
             });
 
             setSuccessMessage(`Has retirado exitosamente ${inscripcionParaRetiro.curso.nombre}`);
-            console.log("✅ Inscripción retirada exitosamente.");
+            // console.log("✅ Inscripción retirada exitosamente."); // Removed log
             
             // Recargar las secciones para actualizar el estado
             await fetchSeccionesDisponibles(periodoSeleccionado);

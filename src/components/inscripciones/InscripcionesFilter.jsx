@@ -95,7 +95,8 @@ const carreras = ["Administración",
         "Trabajo Social",
         "Traducción Francés-Español",
         "Traducción Inglés-Español",
-        "Turismo"]
+        "Turismo",
+"carrera libre"]
 
 export const InscripcionesFilter = ({ 
     searchTerm, 

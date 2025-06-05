@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from "framer-motion";
 import { AlertTriangle } from "lucide-react";
 
-export const ConfirmRetirarModal = ({ open, onClose, onConfirm, curso, horario, grupo }) => {
+export const ConfirmRetirarModal = ({ open, onClose, onConfirm, curso, horario, grupo, profesor }) => {
   if (!open) return null;
 
   const handleModalClick = (e) => {
@@ -53,6 +53,16 @@ export const ConfirmRetirarModal = ({ open, onClose, onConfirm, curso, horario, 
             <span className="text-gray-400">Grupo:</span>
             <span className="text-gray-200">{grupo}</span>
           </div>
+          {profesor && (
+            <div className="flex justify-between">
+              <span className="text-gray-400">Profesor:</span>
+              <span className="text-gray-200">
+                {profesor.nombre}
+                {profesor.apellido1 && profesor.apellido1 !== "undefined" ? ` ${profesor.apellido1}` : ''}
+                {profesor.apellido2 && profesor.apellido2 !== "undefined" ? ` ${profesor.apellido2}` : ''}
+              </span>
+            </div>
+          )}
           {horario && (
             <div className="flex justify-between">
               <span className="text-gray-400">Horario:</span>

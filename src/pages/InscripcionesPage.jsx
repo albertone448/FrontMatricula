@@ -79,6 +79,13 @@ const InscripcionesPage = () => {
         return matchSearch && matchDia && matchHorario && matchCarrera;
     });
 
+    // Wrapper for handleInscribirMateria to inject user's career
+    const handleInscribirMateriaWrapper = (seccionId, nombreCurso) => {
+        // The hook's handleInscribirMateria now expects userCarrera as the third argument.
+        // user.carrera comes from the useProfile hook.
+        handleInscribirMateria(seccionId, nombreCurso, user?.carrera);
+    };
+
     // Verificar si el usuario es estudiante
     if (userRole !== "Estudiante") {
         return (
@@ -122,6 +129,7 @@ const InscripcionesPage = () => {
                         curso={inscripcionParaRetiro.curso} 
                         horario={inscripcionParaRetiro.horario}
                         grupo={inscripcionParaRetiro.grupo}
+                        profesor={inscripcionParaRetiro.profesor} // Added profesor prop
                         // If ConfirmRetirarModal expects the whole object, you might pass it as a prop e.g., inscripcionData={inscripcionParaRetiro}
                     />
                 )}
@@ -196,7 +204,7 @@ const InscripcionesPage = () => {
                 <SeccionesTable
                     secciones={seccionesFiltradas}
                     loading={loading}
-                    handleInscribirMateria={handleInscribirMateria}
+                    handleInscribirMateria={handleInscribirMateriaWrapper} // Use the wrapper function
                     handleRetirarMateria={handleRetirarMateria}
                 />
 

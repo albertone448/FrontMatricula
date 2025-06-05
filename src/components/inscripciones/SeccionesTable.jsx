@@ -23,6 +23,9 @@ export const SeccionesTable = ({
                                 Horario
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                Profesor
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                                 Carrera
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -87,6 +90,11 @@ export const SeccionesTable = ({
                                     )}
                                 </td>
 
+                                {/* Profesor */}
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                                    {seccion.profesor ? `${seccion.profesor.nombre} ${seccion.profesor.apellido1}` : 'No asignado'}
+                                </td>
+
                                 {/* Carrera */}
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-300">
@@ -116,19 +124,21 @@ export const SeccionesTable = ({
                                 </td>
 
                                 {/* Acciones */}
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <td className="px-3 py-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider w-20"> {/* Ancho Acciones */}
                                     <button
                                         onClick={() => seccion.inscrito 
-                                            ? handleRetirarMateria(seccion.inscripcionId, seccion.curso, seccion.horario, seccion.grupo, seccion.seccionId)
+                                            ? handleRetirarMateria(seccion.inscripcionId, seccion.curso, seccion.horario, seccion.grupo) 
                                             : handleInscribirMateria(seccion.seccionId, seccion.curso.nombre)
                                         }
-                                        disabled={loading}
-                                        className={`w-20 text-center px-4 py-2 rounded-lg font-medium transition duration-200 ${
-                                            loading ? "opacity-50 cursor-not-allowed " : ""
-                                        }${
-                                            seccion.inscrito
-                                                ? "bg-red-600 hover:bg-red-700 text-white"
-                                                : "bg-blue-600 hover:bg-blue-700 text-white"
+                                        disabled={loading || (seccion.inscrito && seccion.tieneNotas)}
+                                        title={seccion.inscrito && seccion.tieneNotas ? "No se puede retirar una materia con notas" : (seccion.inscrito ? "Retirar materia" : "Inscribir materia")}
+                                        className={`w-20 text-center px-3 py-1.5 rounded-lg font-medium transition duration-200 
+                                            ${loading ? "opacity-50 cursor-not-allowed " : ""}
+                                            ${(seccion.inscrito && seccion.tieneNotas) 
+                                                ? "bg-gray-500 text-gray-300 cursor-not-allowed opacity-70" 
+                                                : seccion.inscrito 
+                                                    ? "bg-red-600 hover:bg-red-700 text-white" 
+                                                    : "bg-blue-600 hover:bg-blue-700 text-white"
                                         }`}
                                     >
                                         {loading ? "..." : 
