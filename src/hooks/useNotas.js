@@ -84,7 +84,7 @@ export const useNotas = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log('🔄 Actualizando nota:', notaData);
+            console.log('🔄 Actualizando nota existente:', notaData);
 
             const response = await api.put("Nota/UpdateNota", notaData);
             
@@ -119,14 +119,25 @@ export const useNotas = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log('📝 Creando nota:', notaData);
+            console.log('📝 Creando nueva nota:', notaData);
 
-            const response = await api.post("Nota/AddNota", notaData);
+            // Usar el endpoint correcto para crear nota
+            const response = await api.post("Nota/CrearNota", {
+                evaluacionId: notaData.evaluacionId,
+                inscripcionId: notaData.inscripcionId,
+                total: notaData.total
+            });
             
             console.log('✅ Nota creada exitosamente:', response.data);
 
             // Agregar la nueva nota al estado local
-            setNotas(prev => [...prev, response.data]);
+            const nuevaNota = {
+                notaId: response.data.notaId || Date.now(), // En caso de que no venga el ID
+                evaluacionId: notaData.evaluacionId,
+                inscripcionId: notaData.inscripcionId,
+                total: notaData.total
+            };
+            setNotas(prev => [...prev, nuevaNota]);
             
             return response.data;
         } catch (error) {
@@ -138,6 +149,97 @@ export const useNotas = () => {
             setLoading(false);
         }
     }, []);
+
+    // ✨ NUEVA FUNCIÓN: Guardar nota (crear o actualizar automáticamente)
+    const saveNota = useCallback(async (notaData, seccionId, evaluacionId) => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const token = authUtils.getToken();
+            if (!token) {
+                throw new Error("Token de autenticación no encontrado");
+            }
+
+            // Determinar si debe crear o actualizar basado en si tiene notaId y si es > 0
+            const isNewNota = !notaData.notaId || notaData.notaId === 0;
+            
+            if (isNewNota) {
+                console.log('📝 Creando nueva nota para estudiante:', {
+                    evaluacionId: notaData.evaluacionId,
+                    inscripcionId: notaData.inscripcionId,
+                    total: notaData.total
+                });
+
+                // Crear nueva nota
+                const response = await api.post("Nota/CrearNota", {
+                    evaluacionId: notaData.evaluacionId,
+                    inscripcionId: notaData.inscripcionId,
+                    total: notaData.total
+                });
+
+                console.log('✅ Nueva nota creada exitosamente:', response.data);
+
+                // ✨ SOLUCIÓN: Refrescar los datos para obtener el notaId real
+                // Obtener todas las notas actualizadas de la sección
+                const notasActualizadas = await fetchNotasPorSeccion(seccionId);
+                
+                // Encontrar la nota recién creada para este estudiante y evaluación
+                const notaCreada = notasActualizadas.find(nota => 
+                    nota.evaluacionId === notaData.evaluacionId && 
+                    nota.inscripcionId === notaData.inscripcionId
+                );
+
+                const notaIdReal = notaCreada ? notaCreada.notaId : (response.data.notaId || response.data.id);
+                
+                console.log('🔍 Nota creada con ID real:', notaIdReal);
+                
+                return {
+                    ...response.data,
+                    isNew: true,
+                    notaId: notaIdReal, // Usar el ID real de la base de datos
+                    total: notaData.total,
+                    evaluacionId: notaData.evaluacionId,
+                    inscripcionId: notaData.inscripcionId
+                };
+            } else {
+                console.log('🔄 Actualizando nota existente:', notaData);
+
+                // Actualizar nota existente
+                const response = await api.put("Nota/UpdateNota", {
+                    notaId: notaData.notaId,
+                    evaluacionId: notaData.evaluacionId,
+                    inscripcionId: notaData.inscripcionId,
+                    total: notaData.total
+                });
+
+                console.log('✅ Nota actualizada exitosamente:', response.data);
+
+                // Actualizar la nota en el estado local
+                setNotas(prev => prev.map(nota => 
+                    nota.notaId === notaData.notaId 
+                        ? { ...nota, total: notaData.total }
+                        : nota
+                ));
+                
+                return {
+                    ...response.data,
+                    isNew: false,
+                    notaId: notaData.notaId,
+                    total: notaData.total,
+                    evaluacionId: notaData.evaluacionId,
+                    inscripcionId: notaData.inscripcionId
+                };
+            }
+        } catch (error) {
+            console.error("❌ Error al guardar nota:", error);
+            const errorMessage = error.response?.data?.message || error.message || "Error al guardar la nota";
+            setError(errorMessage);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchNotasPorSeccion]);
 
     // Función para obtener estudiantes con sus notas para una evaluación específica
     const fetchEstudiantesConNotas = useCallback(async (seccionId, evaluacionId) => {
@@ -207,6 +309,7 @@ export const useNotas = () => {
         fetchUsuarioPorId,
         fetchEstudiantesConNotas,
         updateNota,
-        createNota
+        createNota,
+        saveNota // ✨ Nueva función que maneja crear o actualizar automáticamente
     };
 };

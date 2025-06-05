@@ -13,9 +13,7 @@ import {
     Save,
     CheckCircle,
     AlertCircle,
-    Percent,
-    Eye,
-    Calculator
+    Percent
 } from "lucide-react";
 import Header from "../common/Header";
 import { useEvaluaciones } from "../../hooks/useEvaluaciones";
@@ -23,9 +21,8 @@ import { useNotas } from "../../hooks/useNotas";
 import { useSecciones } from "../../hooks/useSecciones";
 import { useUserRole } from "../../contexts/UserRoleContext";
 import { authUtils } from "../../utils/authUtils";
-import VerNotasCompletasModal from "./VerNotasCompletasModal";
 
-const EstudianteNotaCard = ({ estudiante, evaluacion, onUpdateNota, loading }) => {
+const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading }) => {
     const [nota, setNota] = useState(estudiante.nota?.total || "");
     const [saving, setSaving] = useState(false);
     const [localError, setLocalError] = useState("");
@@ -77,24 +74,51 @@ const EstudianteNotaCard = ({ estudiante, evaluacion, onUpdateNota, loading }) =
         setSuccessMessage("");
 
         try {
+            // ✨ Usar la nueva función saveNota que maneja crear/actualizar automáticamente
             const notaData = {
-                notaId: estudiante.nota?.notaId || 0,
+                notaId: estudiante.nota?.notaId || 0, // 0 si es nueva nota
                 evaluacionId: evaluacion.evaluacionId,
                 inscripcionId: estudiante.inscripcionId,
                 total: notaNumber
             };
 
-            await onUpdateNota(notaData);
-            setSuccessMessage("Nota guardada exitosamente");
+            console.log('💾 Guardando nota para estudiante:', {
+                estudianteNombre: estudiante.nombreCompleto,
+                notaAnterior: estudiante.nota?.total,
+                notaNueva: notaNumber,
+                esNuevaNota: !estudiante.nota?.notaId || estudiante.nota.notaId === 0
+            });
+
+            const result = await onSaveNota(notaData);
+            
+            // Mostrar mensaje personalizado basado en si fue creación o actualización
+            const mensaje = result.isNew 
+                ? "Nota creada exitosamente" 
+                : "Nota actualizada exitosamente";
+            
+            setSuccessMessage(mensaje);
             setTimeout(() => setSuccessMessage(""), 3000);
+            
+            console.log('✅ Nota guardada exitosamente:', {
+                accion: result.isNew ? 'CREADA' : 'ACTUALIZADA',
+                notaId: result.notaId,
+                total: notaNumber
+            });
+            
         } catch (error) {
+            console.error('❌ Error al guardar nota:', error);
             setLocalError(error.message || "Error al guardar la nota");
         } finally {
             setSaving(false);
         }
     };
 
+    // Determinar si hay cambios
     const hasChanges = estudiante.nota?.total !== parseFloat(nota) || (!estudiante.nota && nota !== "");
+
+    // Determinar el tipo de operación que se realizará
+    const isNewNota = !estudiante.nota?.notaId || estudiante.nota.notaId === 0;
+    const operationText = isNewNota ? "Crear" : "Actualizar";
 
     return (
         <motion.div
@@ -150,14 +174,19 @@ const EstudianteNotaCard = ({ estudiante, evaluacion, onUpdateNota, loading }) =
                             disabled={loading || saving || !hasChanges || !nota}
                             whileHover={{ scale: saving ? 1 : 1.02 }}
                             whileTap={{ scale: saving ? 1 : 0.98 }}
-                            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center min-w-[100px] justify-center"
+                            className={`font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center min-w-[120px] justify-center ${
+                                isNewNota 
+                                    ? "bg-green-600 hover:bg-green-700 disabled:bg-gray-600" 
+                                    : "bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600"
+                            } disabled:cursor-not-allowed text-white`}
+                            title={isNewNota ? "Crear nueva nota" : "Actualizar nota existente"}
                         >
                             {saving ? (
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                             ) : (
                                 <>
                                     <Save className="w-4 h-4 mr-2" />
-                                    Guardar
+                                    {operationText}
                                 </>
                             )}
                         </motion.button>
@@ -221,17 +250,15 @@ const EvaluacionDetailPage = () => {
     const navigate = useNavigate();
     const { userRole } = useUserRole();
     const { getSeccionById } = useSecciones();
-    const { fetchEvaluaciones, getTipoEvaluacionNombre } = useEvaluaciones();
-    const { fetchEstudiantesConNotas, updateNota, fetchNotasPorSeccion } = useNotas();
+    const { fetchEvaluaciones } = useEvaluaciones();
+    const { fetchEstudiantesConNotas, saveNota } = useNotas(); // ✨ Usar saveNota en lugar de updateNota
     
     const [seccion, setSeccion] = useState(null);
     const [evaluacion, setEvaluacion] = useState(null);
-    const [evaluaciones, setEvaluaciones] = useState([]); // Todas las evaluaciones de la sección
     const [estudiantes, setEstudiantes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const [isNotasCompletasModalOpen, setIsNotasCompletasModalOpen] = useState(false);
 
     // Verificar permisos
     const canManageNotas = () => {
@@ -257,7 +284,6 @@ const EvaluacionDetailPage = () => {
 
                 // 2. Obtener información de las evaluaciones de la sección
                 const evaluacionesData = await fetchEvaluaciones(parseInt(seccionId));
-                setEvaluaciones(evaluacionesData); // Guardar todas las evaluaciones
                 
                 const evaluacionData = evaluacionesData.find(e => e.evaluacionId === parseInt(evaluacionId));
                 
@@ -303,39 +329,40 @@ const EvaluacionDetailPage = () => {
         }
     };
 
-    const handleUpdateNota = async (notaData) => {
+    // ✨ Nueva función que maneja tanto crear como actualizar notas
+    const handleSaveNota = async (notaData) => {
         try {
-            await updateNota(notaData);
+            console.log('💾 Guardando nota en EvaluacionDetailPage:', notaData);
             
-            // Actualizar el estudiante en el estado local
+            // ✨ Pasar seccionId y evaluacionId para poder refrescar después de crear
+            const result = await saveNota(notaData, parseInt(seccionId), parseInt(evaluacionId));
+            
+            // Actualizar el estudiante en el estado local con el ID real
             setEstudiantes(prev => prev.map(est => 
                 est.inscripcionId === notaData.inscripcionId 
                     ? {
                         ...est,
                         nota: {
-                            ...est.nota,
-                            notaId: notaData.notaId,
-                            evaluacionId: notaData.evaluacionId,
-                            inscripcionId: notaData.inscripcionId,
-                            total: notaData.total
+                            notaId: result.notaId, // ✨ Usar el ID real devuelto por la API
+                            evaluacionId: result.evaluacionId,
+                            inscripcionId: result.inscripcionId,
+                            total: result.total
                         }
                     }
                     : est
             ));
 
-            setSuccessMessage("Nota actualizada exitosamente");
+            const operacion = result.isNew ? "creada" : "actualizada";
+            setSuccessMessage(`Nota ${operacion} exitosamente`);
             setTimeout(() => setSuccessMessage(""), 3000);
+            
+            console.log('✅ Estado local actualizado con nota ID real:', result.notaId);
+            
+            return result;
         } catch (error) {
+            console.error('❌ Error en handleSaveNota:', error);
             throw error;
         }
-    };
-
-    const handleVerNotasCompletas = () => {
-        setIsNotasCompletasModalOpen(true);
-    };
-
-    const handleCloseNotasCompletasModal = () => {
-        setIsNotasCompletasModalOpen(false);
     };
 
     // Verificar acceso
@@ -447,27 +474,14 @@ const EvaluacionDetailPage = () => {
                         Volver a la Sección
                     </button>
                     
-                    <div className="flex items-center space-x-3">
-                        {/* Nuevo botón Ver Notas Completas */}
-                        <motion.button
-                            onClick={handleVerNotasCompletas}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center"
-                        >
-                            <Calculator className="w-4 h-4 mr-2" />
-                            Ver Notas Completas
-                        </motion.button>
-                        
-                        <button
-                            onClick={handleRefresh}
-                            disabled={loading}
-                            className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center"
-                        >
-                            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                            Actualizar
-                        </button>
-                    </div>
+                    <button
+                        onClick={handleRefresh}
+                        disabled={loading}
+                        className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-800 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center"
+                    >
+                        <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                        Actualizar
+                    </button>
                 </motion.div>
 
                 {/* Header de la evaluación */}
@@ -564,7 +578,7 @@ const EvaluacionDetailPage = () => {
                                     <EstudianteNotaCard
                                         estudiante={estudiante}
                                         evaluacion={evaluacion}
-                                        onUpdateNota={handleUpdateNota}
+                                        onSaveNota={handleSaveNota}
                                         loading={loading}
                                     />
                                 </motion.div>
@@ -585,8 +599,7 @@ const EvaluacionDetailPage = () => {
                                 <p>• Las notas deben estar entre 0 y 100 puntos.</p>
                                 <p>• Esta evaluación vale {evaluacion?.porcentaje}% de la nota final del curso.</p>
                                 <p>• Los cambios se guardan individualmente para cada estudiante.</p>
-                                <p>• Puedes actualizar las notas en cualquier momento.</p>
-                                <p>• Usa el botón "Ver Notas Completas" para ver el resumen de todas las evaluaciones.</p>
+                                <p>• Regresa a la sección principal para ver el resumen consolidado de todas las evaluaciones.</p>
                                 {estadisticas.sinNota > 0 && (
                                     <p className="text-yellow-300">
                                         ⚠️ {estadisticas.sinNota} estudiante{estadisticas.sinNota > 1 ? 's' : ''} aún no tiene{estadisticas.sinNota > 1 ? 'n' : ''} nota asignada.
@@ -596,16 +609,6 @@ const EvaluacionDetailPage = () => {
                         </motion.div>
                     )}
                 </motion.div>
-
-                {/* Modal de Notas Completas */}
-                <VerNotasCompletasModal
-                    isOpen={isNotasCompletasModalOpen}
-                    onClose={handleCloseNotasCompletasModal}
-                    seccionId={seccionId}
-                    estudiantes={estudiantes}
-                    evaluaciones={evaluaciones}
-                    fetchNotasPorSeccion={fetchNotasPorSeccion}
-                />
             </main>
         </div>
     );
