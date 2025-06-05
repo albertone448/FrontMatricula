@@ -8,7 +8,8 @@ import { UserRoleProvider } from "./contexts/UserRoleContext";
 import InicioPage from "./pages/InicioPage";
 import CursosPage from "./pages/CursosPage";
 import SeccionesPage from "./pages/SeccionesPage";
-import SeccionDetailPage from "./components/secciones/SeccionDetailPage"; // Nueva importación
+import SeccionDetailPage from "./components/secciones/SeccionDetailPage";
+import EvaluacionDetailPage from "./components/secciones/EvaluacionDetailPage"; // ✅ Nueva importación
 import HorariosPage from "./pages/HorariosPage";
 import InscripcionesPage from "./pages/InscripcionesPage";
 import UsuariosPage from "./pages/UsuariosPage";
@@ -57,7 +58,8 @@ function App() {
 									<Route path='/' element={<InicioPage />} />
 									<Route path='/cursos' element={<CursosPage />} />
 									<Route path='/secciones' element={<SeccionesPage />} />
-									<Route path='/secciones/:seccionId' element={<SeccionDetailPage />} /> {/* Nueva ruta */}
+									<Route path='/secciones/:seccionId' element={<SeccionDetailPage />} />
+									<Route path='/secciones/:seccionId/evaluaciones/:evaluacionId' element={<EvaluacionDetailPage />} /> {/* ✅ Nueva ruta */}
 									<Route path='/horarios' element={<HorariosPage />} />
 									<Route path='/inscripciones' element={<InscripcionesPage />} />
 									<Route path='/usuarios' element={<UsuariosPage />} />
