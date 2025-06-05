@@ -7,6 +7,7 @@ import { useSecciones } from "../hooks/useSecciones";
 import { AdminOnly } from "../components/common/RoleBasedAccess";
 import { ShieldX, Home } from "lucide-react";
 import { authUtils } from "../utils/authUtils";
+import api from "../services/apiConfig";
 
 import SeccionHeader from "../components/secciones/SeccionHeader";
 import SeccionStatsCards from "../components/secciones/SeccionStatsCards";
@@ -14,6 +15,7 @@ import SeccionesTable from "../components/secciones/SeccionesTable";
 import SeccionAlertMessages from "../components/secciones/SeccionAlertMessages";
 import CreateSeccionModal from "../components/secciones/CreateSeccionModal";
 import SeccionesProfesorView from "../components/secciones/SeccionesProfesorView";
+import SeccionesEstudianteView from "../components/secciones/SeccionesEstudianteView";
 
 const SeccionesPage = () => {
     const navigate = useNavigate();
@@ -34,9 +36,20 @@ const SeccionesPage = () => {
     } = useSecciones();
     const [seccionToEdit, setSeccionToEdit] = useState(null);
     
-    // Estados para la funcionalidad de periodos para profesores
+    // Estados para la funcionalidad de periodos (compartidos entre todos los roles)
     const [periodosDisponibles, setPeriodosDisponibles] = useState([]);
     const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
+
+    // ✅ Función para obtener todos los periodos disponibles (para administradores)
+    const obtenerTodosLosPeriodos = () => {
+        if (!secciones || userRole !== "Administrador") return [];
+        
+        // Extraer todos los periodos únicos de todas las secciones
+        const periodos = [...new Set(secciones.map(seccion => seccion.periodo).filter(Boolean))];
+        
+        console.log("📅 Todos los periodos disponibles (administrador):", periodos);
+        return periodos.sort().reverse(); // Más recientes primero
+    };
 
     // Función para obtener periodos disponibles del profesor
     const obtenerPeriodosDelProfesor = () => {
@@ -55,6 +68,41 @@ const SeccionesPage = () => {
         return periodos.sort().reverse(); // Más recientes primero
     };
 
+    // Función para obtener periodos disponibles del estudiante
+    const obtenerPeriodosDelEstudiante = async () => {
+        try {
+            const userId = authUtils.getUserId();
+            if (!userId) return [];
+
+            console.log("🔍 Obteniendo periodos disponibles para estudiante:", userId);
+
+            // Obtener todas las inscripciones del estudiante
+            const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
+            const inscripciones = inscripcionesResponse.data;
+
+            if (!inscripciones || inscripciones.length === 0) {
+                return [];
+            }
+
+            // Obtener secciones para extraer periodos únicos
+            const seccionesPromises = inscripciones.map(inscripcion => 
+                api.get(`Seccion/GetSeccionById/${inscripcion.seccionId}`)
+            );
+            
+            const seccionesResponses = await Promise.all(seccionesPromises);
+            const secciones = seccionesResponses.map(response => response.data);
+
+            // Extraer periodos únicos
+            const periodos = [...new Set(secciones.map(seccion => seccion.periodo).filter(Boolean))];
+            console.log("📅 Periodos disponibles (estudiante):", periodos);
+
+            return periodos.sort().reverse(); // Más recientes primero
+        } catch (error) {
+            console.error("❌ Error obteniendo periodos del estudiante:", error);
+            return [];
+        }
+    };
+
     // Cargar secciones al montar el componente y cuando cambie el userRole
     useEffect(() => {
         if (!roleLoading && (userRole === "Administrador" || userRole === "Profesor")) {
@@ -65,9 +113,18 @@ const SeccionesPage = () => {
         }
     }, [fetchSecciones, roleLoading, userRole]);
 
-    // Actualizar periodos disponibles cuando cambien las secciones (para profesores)
+    // ✅ Actualizar periodos disponibles cuando cambien las secciones (ACTUALIZADO para incluir administrador)
     useEffect(() => {
-        if (userRole === "Profesor" && secciones.length > 0) {
+        if (userRole === "Administrador" && secciones.length > 0) {
+            // ✅ Para administradores, mostrar todos los periodos
+            const periodos = obtenerTodosLosPeriodos();
+            setPeriodosDisponibles(periodos);
+            
+            // Si hay periodos y no hay uno seleccionado, seleccionar el más reciente
+            if (periodos.length > 0 && !periodoSeleccionado) {
+                setPeriodoSeleccionado(periodos[0]);
+            }
+        } else if (userRole === "Profesor" && secciones.length > 0) {
             const periodos = obtenerPeriodosDelProfesor();
             setPeriodosDisponibles(periodos);
             
@@ -75,6 +132,16 @@ const SeccionesPage = () => {
             if (periodos.length > 0 && !periodoSeleccionado) {
                 setPeriodoSeleccionado(periodos[0]);
             }
+        } else if (userRole === "Estudiante") {
+            // Para estudiantes, obtener periodos asincrónicamente
+            obtenerPeriodosDelEstudiante().then(periodos => {
+                setPeriodosDisponibles(periodos);
+                
+                // Si hay periodos y no hay uno seleccionado, seleccionar el más reciente
+                if (periodos.length > 0 && !periodoSeleccionado) {
+                    setPeriodoSeleccionado(periodos[0]);
+                }
+            });
         }
     }, [secciones, userRole, periodoSeleccionado]);
 
@@ -124,29 +191,41 @@ const SeccionesPage = () => {
         navigate("/");
     };
 
-    // Handler para ver detalles de una sección (para profesores)
+    // Handler para ver detalles de una sección (para todos los roles que pueden acceder)
     const handleViewSeccion = (seccion) => {
         // Navegar a la página de detalles de la sección
         navigate(`/secciones/${seccion.seccionId}`);
     };
 
-    // Handler para cambio de periodo (solo para profesores)
+    // Handler para cambio de periodo (para todos los roles)
     const handlePeriodoChange = (nuevoPeriodo) => {
         setPeriodoSeleccionado(nuevoPeriodo);
     };
 
-    // Handler para refrescar datos (actualizado para profesores)
+    // ✅ Handler para refrescar datos (ACTUALIZADO para incluir administrador)
     const handleRefreshSecciones = () => {
-        fetchSecciones().then(() => {
-            // Si es profesor, actualizar también los periodos disponibles
-            if (userRole === "Profesor") {
-                const periodos = obtenerPeriodosDelProfesor();
+        if (userRole === "Administrador" || userRole === "Profesor") {
+            fetchSecciones().then(() => {
+                // ✅ Para administradores, actualizar todos los periodos disponibles
+                if (userRole === "Administrador") {
+                    const periodos = obtenerTodosLosPeriodos();
+                    setPeriodosDisponibles(periodos);
+                }
+                // Para profesores, actualizar también los periodos disponibles
+                else if (userRole === "Profesor") {
+                    const periodos = obtenerPeriodosDelProfesor();
+                    setPeriodosDisponibles(periodos);
+                }
+            });
+        } else if (userRole === "Estudiante") {
+            // Para estudiantes, refrescar periodos disponibles
+            obtenerPeriodosDelEstudiante().then(periodos => {
                 setPeriodosDisponibles(periodos);
-            }
-        });
+            });
+        }
     };
 
-    // Componente de acceso denegado para estudiantes
+    // Componente de acceso denegado para roles no reconocidos
     const AccessDeniedContent = () => (
         <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
             <Header title="Acceso Denegado" />
@@ -175,7 +254,7 @@ const SeccionesPage = () => {
 
                         {/* Mensaje principal */}
                         <p className="text-xl text-gray-300 mb-4">
-                            No tienes permisos para gestionar secciones
+                            No tienes permisos para acceder a esta página
                         </p>
 
                         {/* Información del usuario */}
@@ -197,8 +276,9 @@ const SeccionesPage = () => {
                             </h3>
                             <p className="text-blue-200 text-sm leading-relaxed">
                                 El acceso a <strong>Secciones</strong> está disponible para usuarios con rol de 
-                                <strong className="text-green-400"> Administrador</strong> (gestión completa) o 
-                                <strong className="text-blue-400"> Profesor</strong> (solo sus secciones asignadas). 
+                                <strong className="text-green-400"> Administrador</strong> (gestión completa), 
+                                <strong className="text-blue-400"> Profesor</strong> (sus secciones asignadas) o
+                                <strong className="text-purple-400"> Estudiante</strong> (consulta de sus cursos). 
                                 Tu rol actual es <strong className="text-yellow-400">{userRole}</strong>, 
                                 por lo que no tienes acceso a esta funcionalidad.
                             </p>
@@ -240,57 +320,70 @@ const SeccionesPage = () => {
         </div>
     );
 
-    // Componente para vista de administrador (gestión completa de secciones)
-    const SeccionesAdminContent = () => (
-        <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
-            <Header title="Gestión de Secciones" />
-            
-            <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
-                {/* Mensajes de alerta */}
-                <SeccionAlertMessages 
-                    successMessage={successMessage}
-                    errorMessage={error}
-                    onClearSuccess={handleClearSuccess}
-                    onRetry={fetchSecciones}
-                />
+    // ✅ Componente para vista de administrador (ACTUALIZADO con filtro por periodo)
+    const SeccionesAdminContent = () => {
+        // ✅ Filtrar secciones por periodo seleccionado
+        const seccionesFiltradas = periodoSeleccionado 
+            ? secciones.filter(seccion => seccion.periodo === periodoSeleccionado)
+            : secciones;
 
-                {/* Header de la página */}
-                <SeccionHeader 
-                    onCreateSeccion={handleCreateSeccion}
-                    onRefresh={handleRefreshSecciones}
-                    loading={loading}
-                />
+        return (
+            <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
+                <Header title="Gestión de Secciones" />
+                
+                <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                    {/* Mensajes de alerta */}
+                    <SeccionAlertMessages 
+                        successMessage={successMessage}
+                        errorMessage={error}
+                        onClearSuccess={handleClearSuccess}
+                        onRetry={fetchSecciones}
+                    />
 
-                {/* Estadísticas */}
-                <SeccionStatsCards 
-                    secciones={secciones}
-                    loading={loading}
-                />
+                    {/* ✅ Header de la página - ACTUALIZADO con selector de periodo */}
+                    <SeccionHeader 
+                        onCreateSeccion={handleCreateSeccion}
+                        onRefresh={handleRefreshSecciones}
+                        loading={loading}
+                        periodosDisponibles={periodosDisponibles}
+                        periodoSeleccionado={periodoSeleccionado}
+                        onPeriodoChange={handlePeriodoChange}
+                        userRole={userRole}
+                    />
 
-                {/* Tabla de secciones */}
-                <SeccionesTable 
-                    secciones={secciones}
-                    loading={loading}
-                    searchTerm={searchTerm}
-                    onSearchChange={handleSearch}
-                    onEditSeccion={handleEditSeccion}
-                    onDeleteSeccion={handleDeleteSeccion}
-                />
+                    {/* ✅ Estadísticas - usando secciones filtradas */}
+                    <SeccionStatsCards 
+                        secciones={seccionesFiltradas}
+                        loading={loading}
+                    />
 
-                {/* Modal de creación/edición */}
-                <CreateSeccionModal
-                    isOpen={isModalOpen}
-                    onClose={handleCloseModal}
-                    onSuccess={handleCreateSuccess}
-                    seccionToEdit={seccionToEdit}
-                    createSeccion={createSeccion}
-                    updateSeccion={updateSeccion}
-                    profesores={profesores}
-                    cursos={cursos}
-                />
-            </main>
-        </div>
-    );
+                    {/* ✅ Tabla de secciones - usando secciones filtradas */}
+                    <SeccionesTable 
+                        secciones={seccionesFiltradas}
+                        loading={loading}
+                        searchTerm={searchTerm}
+                        onSearchChange={handleSearch}
+                        onEditSeccion={handleEditSeccion}
+                        onDeleteSeccion={handleDeleteSeccion}
+                        onViewSeccion={handleViewSeccion}
+                        userRole={userRole}
+                    />
+
+                    {/* Modal de creación/edición */}
+                    <CreateSeccionModal
+                        isOpen={isModalOpen}
+                        onClose={handleCloseModal}
+                        onSuccess={handleCreateSuccess}
+                        seccionToEdit={seccionToEdit}
+                        createSeccion={createSeccion}
+                        updateSeccion={updateSeccion}
+                        profesores={profesores}
+                        cursos={cursos}
+                    />
+                </main>
+            </div>
+        );
+    };
 
     // Componente para vista de profesor (solo sus secciones con selección de periodo)
     const SeccionesProfesorContent = () => (
@@ -320,6 +413,32 @@ const SeccionesPage = () => {
         </div>
     );
 
+    // Componente para vista de estudiante (solo lectura de sus secciones)
+    const SeccionesEstudianteContent = () => (
+        <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
+            <Header title="Mis Cursos" />
+            
+            <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                {/* Mensajes de alerta */}
+                <SeccionAlertMessages 
+                    successMessage={successMessage}
+                    errorMessage={error}
+                    onClearSuccess={handleClearSuccess}
+                    onRetry={handleRefreshSecciones}
+                />
+
+                {/* Vista específica para estudiantes */}
+                <SeccionesEstudianteView 
+                    loading={loading}
+                    onRefresh={handleRefreshSecciones}
+                    periodosDisponibles={periodosDisponibles}
+                    periodoSeleccionado={periodoSeleccionado}
+                    onPeriodoChange={handlePeriodoChange}
+                />
+            </main>
+        </div>
+    );
+
     // Renderizado condicional basado en el estado de carga y rol
     if (roleLoading) {
         return <LoadingContent />;
@@ -330,8 +449,10 @@ const SeccionesPage = () => {
         return <SeccionesAdminContent />;
     } else if (userRole === "Profesor") {
         return <SeccionesProfesorContent />;
+    } else if (userRole === "Estudiante") {
+        return <SeccionesEstudianteContent />;
     } else {
-        // Para estudiantes o roles no reconocidos
+        // Para roles no reconocidos
         return <AccessDeniedContent />;
     }
 };
