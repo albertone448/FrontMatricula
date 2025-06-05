@@ -7,6 +7,7 @@ import { useSecciones } from "../hooks/useSecciones";
 import { AdminOnly } from "../components/common/RoleBasedAccess";
 import { ShieldX, Home } from "lucide-react";
 import { authUtils } from "../utils/authUtils";
+import api from "../services/apiConfig";
 
 import SeccionHeader from "../components/secciones/SeccionHeader";
 import SeccionStatsCards from "../components/secciones/SeccionStatsCards";
@@ -14,6 +15,7 @@ import SeccionesTable from "../components/secciones/SeccionesTable";
 import SeccionAlertMessages from "../components/secciones/SeccionAlertMessages";
 import CreateSeccionModal from "../components/secciones/CreateSeccionModal";
 import SeccionesProfesorView from "../components/secciones/SeccionesProfesorView";
+import SeccionesEstudianteView from "../components/secciones/SeccionesEstudianteView";
 
 const SeccionesPage = () => {
     const navigate = useNavigate();
@@ -34,7 +36,7 @@ const SeccionesPage = () => {
     } = useSecciones();
     const [seccionToEdit, setSeccionToEdit] = useState(null);
     
-    // Estados para la funcionalidad de periodos para profesores
+    // Estados para la funcionalidad de periodos (compartidos entre profesor y estudiante)
     const [periodosDisponibles, setPeriodosDisponibles] = useState([]);
     const [periodoSeleccionado, setPeriodoSeleccionado] = useState("");
 
@@ -55,6 +57,41 @@ const SeccionesPage = () => {
         return periodos.sort().reverse(); // Más recientes primero
     };
 
+    // ✅ Nueva función para obtener periodos disponibles del estudiante
+    const obtenerPeriodosDelEstudiante = async () => {
+        try {
+            const userId = authUtils.getUserId();
+            if (!userId) return [];
+
+            console.log("🔍 Obteniendo periodos disponibles para estudiante:", userId);
+
+            // Obtener todas las inscripciones del estudiante
+            const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
+            const inscripciones = inscripcionesResponse.data;
+
+            if (!inscripciones || inscripciones.length === 0) {
+                return [];
+            }
+
+            // Obtener secciones para extraer periodos únicos
+            const seccionesPromises = inscripciones.map(inscripcion => 
+                api.get(`Seccion/GetSeccionById/${inscripcion.seccionId}`)
+            );
+            
+            const seccionesResponses = await Promise.all(seccionesPromises);
+            const secciones = seccionesResponses.map(response => response.data);
+
+            // Extraer periodos únicos
+            const periodos = [...new Set(secciones.map(seccion => seccion.periodo).filter(Boolean))];
+            console.log("📅 Periodos disponibles (estudiante):", periodos);
+
+            return periodos.sort().reverse(); // Más recientes primero
+        } catch (error) {
+            console.error("❌ Error obteniendo periodos del estudiante:", error);
+            return [];
+        }
+    };
+
     // Cargar secciones al montar el componente y cuando cambie el userRole
     useEffect(() => {
         if (!roleLoading && (userRole === "Administrador" || userRole === "Profesor")) {
@@ -65,7 +102,7 @@ const SeccionesPage = () => {
         }
     }, [fetchSecciones, roleLoading, userRole]);
 
-    // Actualizar periodos disponibles cuando cambien las secciones (para profesores)
+    // ✅ Actualizar periodos disponibles cuando cambien las secciones (para profesores) o al cargar (para estudiantes)
     useEffect(() => {
         if (userRole === "Profesor" && secciones.length > 0) {
             const periodos = obtenerPeriodosDelProfesor();
@@ -75,6 +112,16 @@ const SeccionesPage = () => {
             if (periodos.length > 0 && !periodoSeleccionado) {
                 setPeriodoSeleccionado(periodos[0]);
             }
+        } else if (userRole === "Estudiante") {
+            // Para estudiantes, obtener periodos asincrónicamente
+            obtenerPeriodosDelEstudiante().then(periodos => {
+                setPeriodosDisponibles(periodos);
+                
+                // Si hay periodos y no hay uno seleccionado, seleccionar el más reciente
+                if (periodos.length > 0 && !periodoSeleccionado) {
+                    setPeriodoSeleccionado(periodos[0]);
+                }
+            });
         }
     }, [secciones, userRole, periodoSeleccionado]);
 
@@ -130,23 +177,30 @@ const SeccionesPage = () => {
         navigate(`/secciones/${seccion.seccionId}`);
     };
 
-    // Handler para cambio de periodo (solo para profesores)
+    // Handler para cambio de periodo (para profesores y estudiantes)
     const handlePeriodoChange = (nuevoPeriodo) => {
         setPeriodoSeleccionado(nuevoPeriodo);
     };
 
-    // Handler para refrescar datos (actualizado para profesores)
+    // Handler para refrescar datos (actualizado para todos los roles)
     const handleRefreshSecciones = () => {
-        fetchSecciones().then(() => {
-            // Si es profesor, actualizar también los periodos disponibles
-            if (userRole === "Profesor") {
-                const periodos = obtenerPeriodosDelProfesor();
+        if (userRole === "Administrador" || userRole === "Profesor") {
+            fetchSecciones().then(() => {
+                // Si es profesor, actualizar también los periodos disponibles
+                if (userRole === "Profesor") {
+                    const periodos = obtenerPeriodosDelProfesor();
+                    setPeriodosDisponibles(periodos);
+                }
+            });
+        } else if (userRole === "Estudiante") {
+            // Para estudiantes, refrescar periodos disponibles
+            obtenerPeriodosDelEstudiante().then(periodos => {
                 setPeriodosDisponibles(periodos);
-            }
-        });
+            });
+        }
     };
 
-    // Componente de acceso denegado para estudiantes
+    // Componente de acceso denegado para roles no reconocidos
     const AccessDeniedContent = () => (
         <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
             <Header title="Acceso Denegado" />
@@ -175,7 +229,7 @@ const SeccionesPage = () => {
 
                         {/* Mensaje principal */}
                         <p className="text-xl text-gray-300 mb-4">
-                            No tienes permisos para gestionar secciones
+                            No tienes permisos para acceder a esta página
                         </p>
 
                         {/* Información del usuario */}
@@ -197,8 +251,9 @@ const SeccionesPage = () => {
                             </h3>
                             <p className="text-blue-200 text-sm leading-relaxed">
                                 El acceso a <strong>Secciones</strong> está disponible para usuarios con rol de 
-                                <strong className="text-green-400"> Administrador</strong> (gestión completa) o 
-                                <strong className="text-blue-400"> Profesor</strong> (solo sus secciones asignadas). 
+                                <strong className="text-green-400"> Administrador</strong> (gestión completa), 
+                                <strong className="text-blue-400"> Profesor</strong> (sus secciones asignadas) o
+                                <strong className="text-purple-400"> Estudiante</strong> (consulta de sus cursos). 
                                 Tu rol actual es <strong className="text-yellow-400">{userRole}</strong>, 
                                 por lo que no tienes acceso a esta funcionalidad.
                             </p>
@@ -320,6 +375,32 @@ const SeccionesPage = () => {
         </div>
     );
 
+    // Componente para vista de estudiante (solo lectura de sus secciones)
+    const SeccionesEstudianteContent = () => (
+        <div className='flex-1 overflow-auto relative z-10 bg-gray-900'>
+            <Header title="Mis Cursos" />
+            
+            <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                {/* Mensajes de alerta */}
+                <SeccionAlertMessages 
+                    successMessage={successMessage}
+                    errorMessage={error}
+                    onClearSuccess={handleClearSuccess}
+                    onRetry={handleRefreshSecciones}
+                />
+
+                {/* Vista específica para estudiantes */}
+                <SeccionesEstudianteView 
+                    loading={loading}
+                    onRefresh={handleRefreshSecciones}
+                    periodosDisponibles={periodosDisponibles}
+                    periodoSeleccionado={periodoSeleccionado}
+                    onPeriodoChange={handlePeriodoChange}
+                />
+            </main>
+        </div>
+    );
+
     // Renderizado condicional basado en el estado de carga y rol
     if (roleLoading) {
         return <LoadingContent />;
@@ -330,8 +411,10 @@ const SeccionesPage = () => {
         return <SeccionesAdminContent />;
     } else if (userRole === "Profesor") {
         return <SeccionesProfesorContent />;
+    } else if (userRole === "Estudiante") {
+        return <SeccionesEstudianteContent />;
     } else {
-        // Para estudiantes o roles no reconocidos
+        // Para roles no reconocidos
         return <AccessDeniedContent />;
     }
 };
