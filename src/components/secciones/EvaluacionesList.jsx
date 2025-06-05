@@ -156,15 +156,18 @@ const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, onViewNotas, canM
 };
 
 const PorcentajeIndicator = ({ porcentajeTotal }) => {
+    // Si es exactamente 100%, no mostrar el componente
+    if (porcentajeTotal === 100) {
+        return null;
+    }
+
     const getIndicatorColor = () => {
-        if (porcentajeTotal === 100) return "text-green-400 bg-green-500";
         if (porcentajeTotal > 100) return "text-red-400 bg-red-500";
         if (porcentajeTotal >= 80) return "text-yellow-400 bg-yellow-500";
         return "text-blue-400 bg-blue-500";
     };
 
     const getIndicatorIcon = () => {
-        if (porcentajeTotal === 100) return CheckCircle;
         if (porcentajeTotal > 100) return AlertCircle;
         return TrendingUp;
     };
@@ -188,8 +191,7 @@ const PorcentajeIndicator = ({ porcentajeTotal }) => {
                             Porcentaje Total
                         </h3>
                         <p className="text-sm text-gray-400">
-                            {porcentajeTotal === 100 ? "Completo" : 
-                             porcentajeTotal > 100 ? "Excede el límite" : 
+                            {porcentajeTotal > 100 ? "Excede el límite" : 
                              `Faltan ${100 - porcentajeTotal}%`}
                         </p>
                     </div>
@@ -212,7 +214,6 @@ const PorcentajeIndicator = ({ porcentajeTotal }) => {
                         animate={{ width: `${Math.min(porcentajeTotal, 100)}%` }}
                         transition={{ delay: 0.5, duration: 0.8 }}
                         className={`h-3 rounded-full ${
-                            porcentajeTotal === 100 ? "bg-green-500" :
                             porcentajeTotal > 100 ? "bg-red-500" :
                             porcentajeTotal >= 80 ? "bg-yellow-500" : "bg-blue-500"
                         }`}
@@ -362,10 +363,6 @@ const EvaluacionesList = ({
                 >
                     <h4 className="text-blue-300 font-semibold mb-3">Información sobre las evaluaciones:</h4>
                     <div className="text-blue-200 text-sm space-y-2">
-                        <p>• El porcentaje total de todas las evaluaciones debe sumar exactamente 100%.</p>
-                        <p>• Puedes crear múltiples evaluaciones del mismo tipo si es necesario.</p>
-                        <p>• Haz clic en "Gestionar Notas" para asignar calificaciones a los estudiantes.</p>
-                        <p>• Usa "Ver Notas Completas" para ver el resumen consolidado de todas las evaluaciones.</p>
                         <p>• Las evaluaciones configuradas aquí servirán para calcular la nota final del curso.</p>
                         {porcentajeTotal < 100 && (
                             <p className="text-yellow-300">

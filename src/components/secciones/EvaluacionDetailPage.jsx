@@ -13,7 +13,8 @@ import {
     Save,
     CheckCircle,
     AlertCircle,
-    Percent
+    Percent,
+    Shield
 } from "lucide-react";
 import Header from "../common/Header";
 import { useEvaluaciones } from "../../hooks/useEvaluaciones";
@@ -22,7 +23,7 @@ import { useSecciones } from "../../hooks/useSecciones";
 import { useUserRole } from "../../contexts/UserRoleContext";
 import { authUtils } from "../../utils/authUtils";
 
-const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading }) => {
+const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading, userRole }) => {
     const [nota, setNota] = useState(estudiante.nota?.total || "");
     const [saving, setSaving] = useState(false);
     const [localError, setLocalError] = useState("");
@@ -74,7 +75,7 @@ const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading }) => 
         setSuccessMessage("");
 
         try {
-            // ✨ Usar la nueva función saveNota que maneja crear/actualizar automáticamente
+            // Usar la nueva función saveNota que maneja crear/actualizar automáticamente
             const notaData = {
                 notaId: estudiante.nota?.notaId || 0, // 0 si es nueva nota
                 evaluacionId: evaluacion.evaluacionId,
@@ -86,7 +87,8 @@ const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading }) => 
                 estudianteNombre: estudiante.nombreCompleto,
                 notaAnterior: estudiante.nota?.total,
                 notaNueva: notaNumber,
-                esNuevaNota: !estudiante.nota?.notaId || estudiante.nota.notaId === 0
+                esNuevaNota: !estudiante.nota?.notaId || estudiante.nota.notaId === 0,
+                userRole: userRole
             });
 
             const result = await onSaveNota(notaData);
@@ -102,7 +104,8 @@ const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading }) => 
             console.log('✅ Nota guardada exitosamente:', {
                 accion: result.isNew ? 'CREADA' : 'ACTUALIZADA',
                 notaId: result.notaId,
-                total: notaNumber
+                total: notaNumber,
+                byUser: userRole
             });
             
         } catch (error) {
@@ -251,7 +254,7 @@ const EvaluacionDetailPage = () => {
     const { userRole } = useUserRole();
     const { getSeccionById } = useSecciones();
     const { fetchEvaluaciones } = useEvaluaciones();
-    const { fetchEstudiantesConNotas, saveNota } = useNotas(); // ✨ Usar saveNota en lugar de updateNota
+    const { fetchEstudiantesConNotas, saveNota } = useNotas();
     
     const [seccion, setSeccion] = useState(null);
     const [evaluacion, setEvaluacion] = useState(null);
@@ -260,13 +263,23 @@ const EvaluacionDetailPage = () => {
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
 
-    // Verificar permisos
+    // ✅ Verificar permisos - ACTUALIZADO para incluir administradores
     const canManageNotas = () => {
-        if (userRole === "Administrador") return true;
+        if (userRole === "Administrador") {
+            console.log('✅ Administrador tiene acceso completo para gestionar notas');
+            return true;
+        }
         if (userRole === "Profesor" && seccion) {
             const userId = authUtils.getUserId();
-            return seccion.usuarioId === userId;
+            const hasAccess = seccion.usuarioId === userId;
+            console.log('🔍 Verificando acceso de profesor a notas:', { 
+                userId, 
+                seccionUserId: seccion.usuarioId, 
+                hasAccess 
+            });
+            return hasAccess;
         }
+        console.log('❌ Sin permisos para gestionar notas:', { userRole });
         return false;
     };
 
@@ -282,6 +295,13 @@ const EvaluacionDetailPage = () => {
                 const seccionData = await getSeccionById(parseInt(seccionId));
                 setSeccion(seccionData);
 
+                console.log('📄 Sección cargada:', {
+                    seccionId: seccionData.seccionId,
+                    profesorId: seccionData.usuarioId,
+                    profesorNombre: seccionData.profesorNombre,
+                    userRole: userRole
+                });
+
                 // 2. Obtener información de las evaluaciones de la sección
                 const evaluacionesData = await fetchEvaluaciones(parseInt(seccionId));
                 
@@ -292,11 +312,17 @@ const EvaluacionDetailPage = () => {
                 }
                 setEvaluacion(evaluacionData);
 
+                console.log('🎯 Evaluación cargada:', {
+                    evaluacionId: evaluacionData.evaluacionId,
+                    tipoNombre: evaluacionData.tipoNombre,
+                    porcentaje: evaluacionData.porcentaje
+                });
+
                 // 3. Obtener estudiantes con sus notas
                 const estudiantesData = await fetchEstudiantesConNotas(parseInt(seccionId), parseInt(evaluacionId));
                 setEstudiantes(estudiantesData);
 
-                console.log('✅ Datos cargados exitosamente');
+                console.log('✅ Datos cargados exitosamente - Estudiantes:', estudiantesData.length);
 
             } catch (error) {
                 console.error("❌ Error al cargar datos:", error);
@@ -309,7 +335,7 @@ const EvaluacionDetailPage = () => {
         if (seccionId && evaluacionId) {
             fetchData();
         }
-    }, [seccionId, evaluacionId, getSeccionById, fetchEvaluaciones, fetchEstudiantesConNotas]);
+    }, [seccionId, evaluacionId, getSeccionById, fetchEvaluaciones, fetchEstudiantesConNotas, userRole]);
 
     const handleGoBack = () => {
         navigate(`/secciones/${seccionId}`);
@@ -329,12 +355,12 @@ const EvaluacionDetailPage = () => {
         }
     };
 
-    // ✨ Nueva función que maneja tanto crear como actualizar notas
+    // ✅ Nueva función que maneja tanto crear como actualizar notas
     const handleSaveNota = async (notaData) => {
         try {
-            console.log('💾 Guardando nota en EvaluacionDetailPage:', notaData);
+            console.log('💾 Guardando nota en EvaluacionDetailPage:', notaData, 'por usuario:', userRole);
             
-            // ✨ Pasar seccionId y evaluacionId para poder refrescar después de crear
+            // Pasar seccionId y evaluacionId para poder refrescar después de crear
             const result = await saveNota(notaData, parseInt(seccionId), parseInt(evaluacionId));
             
             // Actualizar el estudiante en el estado local con el ID real
@@ -343,7 +369,7 @@ const EvaluacionDetailPage = () => {
                     ? {
                         ...est,
                         nota: {
-                            notaId: result.notaId, // ✨ Usar el ID real devuelto por la API
+                            notaId: result.notaId, // Usar el ID real devuelto por la API
                             evaluacionId: result.evaluacionId,
                             inscripcionId: result.inscripcionId,
                             total: result.total
@@ -353,10 +379,10 @@ const EvaluacionDetailPage = () => {
             ));
 
             const operacion = result.isNew ? "creada" : "actualizada";
-            setSuccessMessage(`Nota ${operacion} exitosamente`);
+            setSuccessMessage(`Nota ${operacion} exitosamente por ${userRole}`);
             setTimeout(() => setSuccessMessage(""), 3000);
             
-            console.log('✅ Estado local actualizado con nota ID real:', result.notaId);
+            console.log('✅ Estado local actualizado con nota ID real:', result.notaId, 'por:', userRole);
             
             return result;
         } catch (error) {
@@ -365,23 +391,38 @@ const EvaluacionDetailPage = () => {
         }
     };
 
-    // Verificar acceso
+    // ✅ Verificar acceso antes de mostrar contenido
     if (!loading && !canManageNotas()) {
         return (
             <div className='flex-1 overflow-auto relative z-10'>
                 <Header title="Acceso Denegado" />
                 <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
-                    <div className="text-center py-12">
-                        <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-6 py-4 rounded-lg inline-block">
-                            <p className="font-medium">No tienes permisos para gestionar notas de esta evaluación</p>
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-center py-12"
+                    >
+                        <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-6 py-8 rounded-lg inline-block">
+                            <Shield className="w-12 h-12 mx-auto mb-4" />
+                            <p className="font-medium text-lg mb-2">No tienes permisos para gestionar notas de esta evaluación</p>
+                            <p className="text-sm opacity-75">
+                                Solo el profesor asignado y los administradores pueden gestionar las notas de las evaluaciones.
+                            </p>
+                            <div className="mt-4 p-3 bg-gray-800 rounded-lg">
+                                <p className="text-xs text-gray-300">
+                                    <strong>Tu rol:</strong> {userRole} | 
+                                    <strong> Sección:</strong> {seccion?.grupo} | 
+                                    <strong> Profesor:</strong> {seccion?.profesorNombre}
+                                </p>
+                            </div>
                         </div>
                         <button
                             onClick={handleGoBack}
-                            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200"
+                            className="mt-6 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200"
                         >
                             Volver a la Sección
                         </button>
-                    </div>
+                    </motion.div>
                 </main>
             </div>
         );
@@ -439,6 +480,19 @@ const EvaluacionDetailPage = () => {
             <Header title={`${evaluacion?.tipoNombre} - Notas`} />
             
             <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                {/* ✅ Indicador de rol para administradores */}
+                {userRole === "Administrador" && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-4 py-2 rounded-lg text-sm flex items-center mb-6"
+                    >
+                        <Shield className="w-4 h-4 mr-2" />
+                        <span className="font-medium">Vista de Administrador:</span>
+                        <span className="ml-1">Puedes gestionar las notas de todos los estudiantes en esta evaluación.</span>
+                    </motion.div>
+                )}
+
                 {/* Mensaje de éxito */}
                 <AnimatePresence>
                     {successMessage && (
@@ -507,6 +561,13 @@ const EvaluacionDetailPage = () => {
                                     <span className="mx-2">•</span>
                                     <Percent className="w-4 h-4 mr-1" />
                                     <span>{evaluacion?.porcentaje}% del total</span>
+                                    {userRole === "Administrador" && (
+                                        <>
+                                            <span className="mx-2">•</span>
+                                            <Shield className="w-4 h-4 mr-1 text-red-400" />
+                                            <span className="text-red-400">Admin</span>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -548,6 +609,9 @@ const EvaluacionDetailPage = () => {
                             </h2>
                             <p className="text-gray-400">
                                 Gestiona las notas de los {estudiantes.length} estudiantes inscritos en esta evaluación
+                                {userRole === "Administrador" && (
+                                    <span className="text-red-400 ml-2">(Vista de Administrador)</span>
+                                )}
                             </p>
                         </div>
                     </div>
@@ -580,6 +644,7 @@ const EvaluacionDetailPage = () => {
                                         evaluacion={evaluacion}
                                         onSaveNota={handleSaveNota}
                                         loading={loading}
+                                        userRole={userRole}
                                     />
                                 </motion.div>
                             ))}
@@ -600,6 +665,11 @@ const EvaluacionDetailPage = () => {
                                 <p>• Esta evaluación vale {evaluacion?.porcentaje}% de la nota final del curso.</p>
                                 <p>• Los cambios se guardan individualmente para cada estudiante.</p>
                                 <p>• Regresa a la sección principal para ver el resumen consolidado de todas las evaluaciones.</p>
+                                {userRole === "Administrador" && (
+                                    <p className="text-red-300">
+                                        • <strong>Administrador:</strong> Tienes acceso completo para gestionar todas las notas de esta evaluación.
+                                    </p>
+                                )}
                                 {estadisticas.sinNota > 0 && (
                                     <p className="text-yellow-300">
                                         ⚠️ {estadisticas.sinNota} estudiante{estadisticas.sinNota > 1 ? 's' : ''} aún no tiene{estadisticas.sinNota > 1 ? 'n' : ''} nota asignada.
