@@ -47,16 +47,6 @@ const SeccionActions = ({ seccion, onEdit, onDelete, onView, userRole }) => {
                 </button>
             )}
             
-            {/* ✅ Botón Eliminar - solo para Administradores */}
-            {canDelete && (
-                <button 
-                    onClick={() => onDelete(seccion)}
-                    className="text-red-400 hover:text-red-300 transition-colors duration-200"
-                    title="Eliminar sección"
-                >
-                    <Trash2 className="w-4 h-4" />
-                </button>
-            )}
         </div>
     );
 };
