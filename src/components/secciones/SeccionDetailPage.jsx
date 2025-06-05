@@ -18,13 +18,13 @@ import {
 import Header from "../common/Header";
 import { useSecciones } from "../../hooks/useSecciones";
 import { useEvaluaciones } from "../../hooks/useEvaluaciones";
-import { useNotas } from "../../hooks/useNotas"; // ✅ Importar useNotas
+import { useNotas } from "../../hooks/useNotas";
 import { useUserRole } from "../../contexts/UserRoleContext";
 import { authUtils } from "../../utils/authUtils";
 import EvaluacionesList from "./EvaluacionesList";
 import CrearEvaluacionModal from "./CrearEvaluacionModal";
 import EditarEvaluacionModal from "./EditarEvaluacionModal";
-import VerNotasCompletasModal from "./VerNotasCompletasModal"; // ✅ Importar el modal
+import VerNotasCompletasModal from "./VerNotasCompletasModal";
 
 const InfoCard = ({ icon: Icon, title, value, color = "text-blue-400", subtitle = null }) => (
     <motion.div
@@ -64,18 +64,25 @@ const SeccionDetailPage = () => {
         contarTipoEvaluacion
     } = useEvaluaciones();
     
-    // ✅ Agregar hook de notas
-    const { fetchNotasPorSeccion } = useNotas();
+    const { 
+        fetchNotasPorSeccion, 
+        fetchInscripcionesPorSeccion, 
+        fetchUsuarioPorId 
+    } = useNotas();
     
     const [seccion, setSeccion] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const [activeTab, setActiveTab] = useState("info"); // "info" o "evaluaciones"
+    const [activeTab, setActiveTab] = useState("info");
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [evaluacionToEdit, setEvaluacionToEdit] = useState(null);
-    const [isNotasCompletasModalOpen, setIsNotasCompletasModalOpen] = useState(false); // ✅ Estado para el modal
+    const [isNotasCompletasModalOpen, setIsNotasCompletasModalOpen] = useState(false);
+    
+    // ✅ Estados para estudiantes y datos del modal
+    const [estudiantes, setEstudiantes] = useState([]);
+    const [inscritosCount, setInscritosCount] = useState(0);
 
     // Verificar permisos para gestionar evaluaciones
     const canManageEvaluaciones = () => {
@@ -87,18 +94,85 @@ const SeccionDetailPage = () => {
         return false;
     };
 
+    // ✅ Función para cargar estudiantes de la sección
+    const fetchEstudiantes = async () => {
+        try {
+            if (!seccionId) return;
+
+            console.log(`🔍 Obteniendo estudiantes para sección ${seccionId}`);
+
+            // 1. Obtener inscripciones de la sección
+            const inscripciones = await fetchInscripcionesPorSeccion(parseInt(seccionId));
+            console.log('📋 Inscripciones obtenidas:', inscripciones.length);
+
+            if (!inscripciones || inscripciones.length === 0) {
+                setEstudiantes([]);
+                setInscritosCount(0);
+                return;
+            }
+
+            setInscritosCount(inscripciones.length);
+
+            // 2. Obtener usuarios únicos de las inscripciones
+            const usuariosUnicos = [...new Map(inscripciones.map(ins => [ins.usuarioId, ins])).values()];
+
+            // 3. Obtener información completa de cada usuario
+            const usuariosPromises = usuariosUnicos.map(inscripcion => 
+                fetchUsuarioPorId(inscripcion.usuarioId)
+            );
+            
+            const usuarios = await Promise.all(usuariosPromises);
+
+            // 4. Combinar información de estudiantes
+            const estudiantesData = usuariosUnicos.map((inscripcion, index) => {
+                const usuario = usuarios[index];
+                
+                return {
+                    inscripcionId: inscripcion.inscripcionId,
+                    usuarioId: inscripcion.usuarioId,
+                    usuario: usuario,
+                    nombreCompleto: `${usuario.nombre} ${usuario.apellido1} ${usuario.apellido2 || ''}`.trim(),
+                    identificacion: usuario.identificacion,
+                    correo: usuario.correo
+                };
+            });
+
+            // 5. Ordenar por nombre
+            estudiantesData.sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
+
+            setEstudiantes(estudiantesData);
+            console.log('✅ Estudiantes procesados:', estudiantesData.length);
+
+        } catch (error) {
+            console.error("❌ Error al obtener estudiantes:", error);
+            setEstudiantes([]);
+            setInscritosCount(0);
+        }
+    };
+
+    // ✅ useEffect para cargar datos de la sección
     useEffect(() => {
         const fetchSeccionDetail = async () => {
             try {
                 setLoading(true);
                 setError("");
+                
+                console.log(`🔍 Cargando detalles de sección ${seccionId}`);
+                
+                // Cargar datos de la sección
                 const seccionData = await getSeccionById(parseInt(seccionId));
                 setSeccion(seccionData);
                 
-                // Cargar evaluaciones después de cargar la sección
+                // Cargar evaluaciones
                 await fetchEvaluaciones(parseInt(seccionId));
+                
+                // Cargar estudiantes
+                await fetchEstudiantes();
+                
+                console.log('✅ Todos los datos cargados exitosamente');
+                
             } catch (error) {
-                console.error("Error al cargar detalles de la sección:", error);
+                console.error("❌ Error al cargar detalles de la sección:", error);
                 setError("Error al cargar los detalles de la sección");
             } finally {
                 setLoading(false);
@@ -110,6 +184,13 @@ const SeccionDetailPage = () => {
         }
     }, [seccionId, getSeccionById, fetchEvaluaciones]);
 
+    // ✅ useEffect separado para cargar estudiantes cuando cambien las dependencias
+    useEffect(() => {
+        if (seccionId && fetchInscripcionesPorSeccion && fetchUsuarioPorId) {
+            fetchEstudiantes();
+        }
+    }, [seccionId, fetchInscripcionesPorSeccion, fetchUsuarioPorId]);
+
     const handleGoBack = () => {
         navigate("/secciones");
     };
@@ -118,10 +199,22 @@ const SeccionDetailPage = () => {
         if (seccionId) {
             try {
                 setLoading(true);
+                console.log('🔄 Refrescando datos...');
+                
+                // Refrescar datos de la sección
                 const seccionData = await getSeccionById(parseInt(seccionId));
                 setSeccion(seccionData);
+                
+                // Refrescar evaluaciones
                 await fetchEvaluaciones(parseInt(seccionId));
+                
+                // Refrescar estudiantes
+                await fetchEstudiantes();
+                
+                console.log('✅ Datos refrescados exitosamente');
+                
             } catch (error) {
+                console.error("❌ Error al actualizar los datos:", error);
                 setError("Error al actualizar los datos");
             } finally {
                 setLoading(false);
@@ -145,12 +238,24 @@ const SeccionDetailPage = () => {
             setTimeout(() => setSuccessMessage(""), 5000);
         } catch (error) {
             console.error("Error al eliminar evaluación:", error);
-            // El error ya se maneja en el hook, pero podemos mostrar un mensaje adicional si es necesario
         }
     };
 
-    // ✅ Función para manejar Ver Notas Completas
-    const handleVerNotasCompletas = () => {
+    // ✅ Función mejorada para manejar Ver Notas Completas
+    const handleVerNotasCompletas = async () => {
+        console.log('🔍 Abriendo modal de notas completas');
+        console.log('📊 Datos disponibles:', {
+            seccionId: seccionId,
+            evaluaciones: evaluaciones.length,
+            estudiantes: estudiantes.length
+        });
+        
+        // Si no hay estudiantes cargados, intentar cargarlos antes de abrir el modal
+        if (estudiantes.length === 0) {
+            console.log('⚠️ No hay estudiantes cargados, intentando cargar...');
+            await fetchEstudiantes();
+        }
+        
         setIsNotasCompletasModalOpen(true);
     };
 
@@ -163,7 +268,6 @@ const SeccionDetailPage = () => {
         setEvaluacionToEdit(null);
     };
 
-    // ✅ Función para cerrar modal de notas completas
     const handleCloseNotasCompletasModal = () => {
         setIsNotasCompletasModalOpen(false);
     };
@@ -322,7 +426,7 @@ const SeccionDetailPage = () => {
                             </div>
                             <div className="w-px h-12 bg-gray-700"></div>
                             <div className="text-center">
-                                <div className="text-2xl font-bold text-green-400">0</div>
+                                <div className="text-2xl font-bold text-green-400">{inscritosCount}</div>
                                 <div className="text-sm text-gray-400">Inscritos</div>
                             </div>
                             <div className="w-px h-12 bg-gray-700"></div>
@@ -497,11 +601,65 @@ const SeccionDetailPage = () => {
                                 </motion.div>
                             )}
 
-                            {/* Acciones adicionales */}
+                            {/* Información de estudiantes */}
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: 0.5 }}
+                                className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
+                            >
+                                <h2 className="text-xl font-bold text-gray-100 mb-4 flex items-center">
+                                    <Users className="w-5 h-5 mr-2 text-blue-400" />
+                                    Estudiantes Inscritos
+                                </h2>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="text-center">
+                                        <div className="text-3xl font-bold text-blue-400">{inscritosCount}</div>
+                                        <div className="text-sm text-gray-400">Total Inscritos</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-3xl font-bold text-green-400">{seccion?.cuposMax || 0}</div>
+                                        <div className="text-sm text-gray-400">Cupos Disponibles</div>
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-3xl font-bold text-yellow-400">
+                                            {seccion?.cuposMax ? Math.max(0, seccion.cuposMax - inscritosCount) : 0}
+                                        </div>
+                                        <div className="text-sm text-gray-400">Cupos Restantes</div>
+                                    </div>
+                                </div>
+
+                                {inscritosCount > 0 && (
+                                    <div className="mt-6">
+                                        <h3 className="text-lg font-semibold text-gray-100 mb-3">Lista de Estudiantes</h3>
+                                        <div className="max-h-60 overflow-y-auto">
+                                            <div className="space-y-2">
+                                                {estudiantes.map((estudiante, index) => (
+                                                    <div key={estudiante.inscripcionId} className="flex items-center p-3 bg-gray-700 bg-opacity-50 rounded-lg">
+                                                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                                            {estudiante.usuario.nombre.charAt(0)}{estudiante.usuario.apellido1.charAt(0)}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <p className="text-gray-100 font-medium">{estudiante.nombreCompleto}</p>
+                                                            <p className="text-gray-400 text-sm">{estudiante.correo}</p>
+                                                        </div>
+                                                        <div className="text-gray-500 text-sm">
+                                                            #{index + 1}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+
+                            {/* Acciones adicionales */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 }}
                                 className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
                             >
                                 <h2 className="text-xl font-bold text-gray-100 mb-4">Acciones Disponibles</h2>
@@ -547,7 +705,7 @@ const SeccionDetailPage = () => {
                                 onAgregarEvaluacion={handleAgregarEvaluacion}
                                 onEditarEvaluacion={handleEditarEvaluacion}
                                 onEliminarEvaluacion={handleEliminarEvaluacion}
-                                onVerNotasCompletas={handleVerNotasCompletas} // ✅ Pasar la función
+                                onVerNotasCompletas={handleVerNotasCompletas}
                                 canManageEvaluaciones={canManageEvaluaciones()}
                                 seccionId={seccionId}
                             />
@@ -580,11 +738,12 @@ const SeccionDetailPage = () => {
                     updateEvaluacion={updateEvaluacion}
                 />
 
-                {/* ✅ Modal de Notas Completas */}
+                {/* ✅ Modal de Notas Completas - Ahora con todos los props necesarios */}
                 <VerNotasCompletasModal
                     isOpen={isNotasCompletasModalOpen}
                     onClose={handleCloseNotasCompletasModal}
                     seccionId={seccionId}
+                    estudiantes={estudiantes}
                     evaluaciones={evaluaciones}
                     fetchNotasPorSeccion={fetchNotasPorSeccion}
                 />

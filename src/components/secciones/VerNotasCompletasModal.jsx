@@ -2,20 +2,18 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
     X, 
-    Eye, 
     User, 
-    TrendingUp, 
-    Award, 
     AlertCircle,
-    CheckCircle,
     Calculator,
     Mail,
     CreditCard,
     Target,
-    Percent
+    CheckCircle,
+    XCircle,
+    Clock
 } from "lucide-react";
 
-const EstudianteNotasCard = ({ estudiante, evaluaciones, onClose }) => {
+const EstudianteNotaRow = ({ estudiante, evaluaciones, index }) => {
     const calcularNotaFinal = () => {
         let notaTotal = 0;
         let porcentajeTotal = 0;
@@ -44,139 +42,94 @@ const EstudianteNotasCard = ({ estudiante, evaluaciones, onClose }) => {
         return "text-red-400";
     };
 
-    const getEstadoColor = () => {
+    const getEstadoIcon = () => {
         if (porcentajeCompletado === 100) {
-            return aprobado ? "text-green-400 bg-green-500" : "text-red-400 bg-red-500";
+            return aprobado ? 
+                <CheckCircle className="w-4 h-4 text-green-400" /> : 
+                <XCircle className="w-4 h-4 text-red-400" />;
         }
-        return "text-yellow-400 bg-yellow-500";
+        return <Clock className="w-4 h-4 text-yellow-400" />;
+    };
+
+    const getEstadoText = () => {
+        if (porcentajeCompletado === 100) {
+            return aprobado ? "Aprobado" : "Reprobado";
+        }
+        return `${porcentajeCompletado}%`;
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700 mb-4"
+        <motion.tr
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: index * 0.05, duration: 0.2 }}
+            className="hover:bg-gray-700 hover:bg-opacity-30 transition-colors duration-200 border-b border-gray-700"
         >
-            {/* Header del estudiante */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                    <div className="w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold mr-4">
+            {/* Estudiante */}
+            <td className="px-4 py-3">
+                <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                         {estudiante.usuario.nombre.charAt(0)}{estudiante.usuario.apellido1.charAt(0)}
                     </div>
-                    <div>
-                        <h3 className="text-xl font-semibold text-gray-100">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium text-gray-100 truncate">
                             {estudiante.nombreCompleto}
-                        </h3>
-                        <div className="flex items-center text-sm text-gray-400 mt-1">
-                            <CreditCard className="w-4 h-4 mr-1" />
-                            <span>{estudiante.identificacion}</span>
-                            <span className="mx-2">•</span>
-                            <Mail className="w-4 h-4 mr-1" />
-                            <span>{estudiante.correo}</span>
+                        </p>
+                        <div className="flex items-center text-xs text-gray-400 space-x-2">
+                            <span className="flex items-center">
+                                <CreditCard className="w-3 h-3 mr-1" />
+                                {estudiante.identificacion}
+                            </span>
                         </div>
                     </div>
                 </div>
-                
-                {/* Nota final destacada */}
-                <div className="text-center">
-                    <div className={`text-3xl font-bold ${getNotaColor(notaFinal)}`}>
+            </td>
+
+            {/* Evaluaciones (solo notas) */}
+            {evaluaciones.map((evaluacion) => {
+                const nota = estudiante.notas.find(n => n.evaluacionId === evaluacion.evaluacionId);
+                return (
+                    <td key={evaluacion.evaluacionId} className="px-3 py-3 text-center">
+                        {nota ? (
+                            <div className="flex flex-col items-center">
+                                <span className={`text-sm font-bold ${getNotaColor(nota.total)}`}>
+                                    {nota.total.toFixed(1)}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                    {((nota.total * evaluacion.porcentaje) / 100).toFixed(1)}pts
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="text-xs text-gray-500">-</span>
+                        )}
+                    </td>
+                );
+            })}
+
+            {/* Nota Final */}
+            <td className="px-4 py-3 text-center">
+                <div className="flex flex-col items-center">
+                    <span className={`text-lg font-bold ${getNotaColor(notaFinal)}`}>
                         {notaFinal.toFixed(1)}
-                    </div>
-                    <div className="text-sm text-gray-400">Nota Final</div>
-                    <div className={`text-xs px-2 py-1 rounded-full mt-1 ${getEstadoColor()} bg-opacity-20`}>
-                        {porcentajeCompletado === 100 ? 
-                            (aprobado ? "Aprobado" : "Reprobado") : 
-                            `${porcentajeCompletado}% Completado`
-                        }
-                    </div>
+                    </span>
+                    <span className="text-xs text-gray-400">/{porcentajeCompletado}%</span>
                 </div>
-            </div>
+            </td>
 
-            {/* Detalles de evaluaciones */}
-            <div className="space-y-4">
-                <h4 className="text-lg font-semibold text-gray-100 flex items-center">
-                    <Target className="w-5 h-5 mr-2 text-blue-400" />
-                    Detalles por Evaluación
-                </h4>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {evaluaciones.map((evaluacion) => {
-                        const nota = estudiante.notas.find(n => n.evaluacionId === evaluacion.evaluacionId);
-                        const contribucion = nota ? (nota.total * evaluacion.porcentaje) / 100 : 0;
-                        
-                        return (
-                            <div key={evaluacion.evaluacionId} className="bg-gray-700 bg-opacity-50 rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-2">
-                                    <h5 className="font-medium text-gray-100">{evaluacion.tipoNombre}</h5>
-                                    <span className="text-sm text-gray-400">{evaluacion.porcentaje}%</span>
-                                </div>
-                                
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center">
-                                        {nota ? (
-                                            <>
-                                                <span className={`text-lg font-bold ${getNotaColor(nota.total)}`}>
-                                                    {nota.total.toFixed(1)}
-                                                </span>
-                                                <span className="text-gray-400 text-sm ml-1">/100</span>
-                                            </>
-                                        ) : (
-                                            <span className="text-gray-500 text-sm">Sin nota</span>
-                                        )}
-                                    </div>
-                                    
-                                    <div className="text-right">
-                                        <div className="text-sm text-blue-400">
-                                            +{contribucion.toFixed(1)} pts
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            al total
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Barra de progreso */}
-                                <div className="mt-3">
-                                    <div className="w-full bg-gray-600 rounded-full h-2">
-                                        <div
-                                            className={`h-2 rounded-full transition-all duration-500 ${
-                                                nota ? (nota.total >= 70 ? "bg-green-500" : "bg-red-500") : "bg-gray-500"
-                                            }`}
-                                            style={{ width: nota ? `${nota.total}%` : "0%" }}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        );
-                    })}
+            {/* Estado */}
+            <td className="px-4 py-3 text-center">
+                <div className="flex items-center justify-center space-x-1">
+                    {getEstadoIcon()}
+                    <span className={`text-xs font-medium ${
+                        porcentajeCompletado === 100 ? 
+                            (aprobado ? "text-green-400" : "text-red-400") : 
+                            "text-yellow-400"
+                    }`}>
+                        {getEstadoText()}
+                    </span>
                 </div>
-
-                {/* Resumen final */}
-                <div className="mt-6 pt-4 border-t border-gray-700">
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                            <div className="text-lg font-bold text-blue-400">
-                                {estudiante.notas.length}
-                            </div>
-                            <div className="text-sm text-gray-400">Evaluaciones</div>
-                        </div>
-                        <div>
-                            <div className="text-lg font-bold text-purple-400">
-                                {porcentajeCompletado}%
-                            </div>
-                            <div className="text-sm text-gray-400">Completado</div>
-                        </div>
-                        <div>
-                            <div className={`text-lg font-bold ${getNotaColor(notaFinal)}`}>
-                                {notaFinal.toFixed(1)}
-                            </div>
-                            <div className="text-sm text-gray-400">Promedio</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </motion.div>
+            </td>
+        </motion.tr>
     );
 };
 
@@ -206,12 +159,78 @@ const VerNotasCompletasModal = ({
 
             console.log(`🔍 Obteniendo todas las notas para sección ${seccionId}`);
 
+            // ✅ Si estudiantes es empty array, obtenerlos desde la API
+            let estudiantesParaUsar = estudiantes;
+            
+            if (!estudiantes || estudiantes.length === 0) {
+                console.log('⚠️ No hay estudiantes en props, obteniendo desde API...');
+                
+                try {
+                    // Obtener inscripciones
+                    const response = await fetch(`http://localhost:5276/api/Inscripcion/ListarUsuariosPorSeccion?id=${seccionId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const inscripciones = await response.json();
+                    
+                    // Obtener usuarios únicos
+                    const usuariosUnicos = [...new Map(inscripciones.map(ins => [ins.usuarioId, ins])).values()];
+                    
+                    // Obtener información completa de cada usuario
+                    const usuariosPromises = usuariosUnicos.map(async (inscripcion) => {
+                        const userResponse = await fetch(`http://localhost:5276/api/Usuario/GetUsuarioPorId/${inscripcion.usuarioId}`, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (!userResponse.ok) {
+                            console.error(`Error obteniendo usuario ${inscripcion.usuarioId}`);
+                            return null;
+                        }
+                        
+                        const usuario = await userResponse.json();
+                        
+                        return {
+                            inscripcionId: inscripcion.inscripcionId,
+                            usuarioId: inscripcion.usuarioId,
+                            usuario: usuario,
+                            nombreCompleto: `${usuario.nombre} ${usuario.apellido1} ${usuario.apellido2 || ''}`.trim(),
+                            identificacion: usuario.identificacion,
+                            correo: usuario.correo
+                        };
+                    });
+                    
+                    const estudiantesObtenidos = await Promise.all(usuariosPromises);
+                    estudiantesParaUsar = estudiantesObtenidos.filter(est => est !== null);
+                    
+                } catch (apiError) {
+                    console.error('❌ Error obteniendo estudiantes desde API:', apiError);
+                    estudiantesParaUsar = [];
+                }
+            }
+
             // Obtener todas las notas de la sección
             const notasData = await fetchNotasPorSeccion(seccionId);
             setNotasCompletas(notasData);
 
+            if (estudiantesParaUsar.length === 0) {
+                setEstudiantesConNotas([]);
+                return;
+            }
+
             // Procesar estudiantes con sus notas
-            const estudiantesConNotasProcesados = estudiantes.map(estudiante => {
+            const estudiantesConNotasProcesados = estudiantesParaUsar.map(estudiante => {
                 const notasDelEstudiante = notasData.filter(nota => 
                     nota.inscripcionId === estudiante.inscripcionId
                 );
@@ -230,8 +249,6 @@ const VerNotasCompletasModal = ({
             });
 
             setEstudiantesConNotas(estudiantesConNotasProcesados);
-
-            console.log('✅ Notas completas cargadas exitosamente');
 
         } catch (error) {
             console.error("❌ Error al cargar notas completas:", error);
@@ -272,34 +289,36 @@ const VerNotasCompletasModal = ({
             return notaFinal >= 70 && porcentajeTotal === 100;
         }).length,
         promedioGeneral: estudiantesConNotas.length > 0 ? 
-            (estudiantesConNotas.reduce((sum, est) => sum + calcularNotaFinalEstudiante(est.notas, evaluaciones), 0) / estudiantesConNotas.length).toFixed(1) : "0"
+            (estudiantesConNotas.reduce((sum, est) => sum + calcularNotaFinalEstudiante(est.notas, evaluaciones), 0) / estudiantesConNotas.length).toFixed(1) : "0",
+        estudiantesConNotas: estudiantesConNotas.filter(est => est.notas.length > 0).length
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-            {/* Overlay */}
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+            {/* Overlay con z-index muy alto */}
             <div 
-                className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm" 
+                className="absolute inset-0 bg-black bg-opacity-60 backdrop-blur-sm" 
                 onClick={handleClose} 
             />
             
-            {/* Modal */}
+            {/* Modal con z-index aún más alto */}
             <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                className="relative bg-gray-800 bg-opacity-95 backdrop-blur-md shadow-xl rounded-xl border border-gray-700 w-full max-w-6xl mx-4 max-h-[90vh] overflow-hidden"
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className="relative z-[10000] bg-gray-800 bg-opacity-95 backdrop-blur-md shadow-2xl rounded-xl border border-gray-700 w-[95vw] max-w-7xl h-[90vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-700">
+                {/* Header - Fijo */}
+                <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-700 bg-gray-900 bg-opacity-80">
                     <div className="flex items-center">
-                        <div className="p-3 bg-purple-600 rounded-full mr-4">
-                            <Calculator className="w-6 h-6 text-white" />
+                        <div className="p-2 bg-purple-600 rounded-lg mr-3">
+                            <Calculator className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-bold text-gray-100">Notas Completas</h2>
-                            <p className="text-gray-400">Resumen de todas las evaluaciones y notas finales</p>
+                            <h2 className="text-xl font-bold text-gray-100">Notas Completas</h2>
+                            <p className="text-sm text-gray-400">Resumen consolidado de evaluaciones</p>
                         </div>
                     </div>
                     
@@ -307,87 +326,124 @@ const VerNotasCompletasModal = ({
                         onClick={handleClose}
                         className="text-gray-400 hover:text-gray-300 transition duration-200 p-2 rounded-lg hover:bg-gray-700"
                     >
-                        <X className="w-6 h-6" />
+                        <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                {/* Estadísticas generales */}
-                <div className="p-6 border-b border-gray-700 bg-gray-900 bg-opacity-50">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-400">{estadisticas.totalEstudiantes}</div>
-                            <div className="text-sm text-gray-400">Total Estudiantes</div>
+                {/* Estadísticas - Fijo */}
+                <div className="flex-shrink-0 p-4 border-b border-gray-700 bg-gray-900 bg-opacity-50">
+                    <div className="grid grid-cols-4 gap-4 text-center">
+                        <div>
+                            <div className="text-xl font-bold text-blue-400">{estadisticas.totalEstudiantes}</div>
+                            <div className="text-xs text-gray-400">Total</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-green-400">{estadisticas.aprobados}</div>
-                            <div className="text-sm text-gray-400">Aprobados</div>
+                        <div>
+                            <div className="text-xl font-bold text-green-400">{estadisticas.aprobados}</div>
+                            <div className="text-xs text-gray-400">Aprobados</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-red-400">{estadisticas.totalEstudiantes - estadisticas.aprobados}</div>
-                            <div className="text-sm text-gray-400">En Riesgo</div>
+                        <div>
+                            <div className="text-xl font-bold text-yellow-400">{estadisticas.estudiantesConNotas}</div>
+                            <div className="text-xs text-gray-400">Con Notas</div>
                         </div>
-                        <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-400">{estadisticas.promedioGeneral}</div>
-                            <div className="text-sm text-gray-400">Promedio General</div>
+                        <div>
+                            <div className="text-xl font-bold text-purple-400">{estadisticas.promedioGeneral}</div>
+                            <div className="text-xs text-gray-400">Promedio</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Contenido */}
-                <div className="p-6 overflow-y-auto max-h-[60vh]">
+                {/* Contenido - Scrolleable */}
+                <div className="flex-1 overflow-hidden">
                     {loading ? (
-                        <div className="flex justify-center items-center py-12">
-                            <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="ml-3 text-gray-400">Cargando notas completas...</span>
+                        <div className="flex justify-center items-center h-full">
+                            <div className="text-center">
+                                <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
+                                <span className="text-sm text-gray-400">Cargando notas...</span>
+                            </div>
                         </div>
                     ) : error ? (
-                        <div className="text-center py-12">
-                            <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-6 py-4 rounded-lg inline-block">
-                                <AlertCircle className="w-6 h-6 mx-auto mb-2" />
-                                <p className="font-medium">Error al cargar las notas</p>
-                                <p className="text-sm opacity-75 mt-1">{error}</p>
+                        <div className="flex justify-center items-center h-full">
+                            <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-6 py-4 rounded-lg">
+                                <AlertCircle className="w-5 h-5 mx-auto mb-2" />
+                                <p className="font-medium text-sm">Error al cargar las notas</p>
+                                <p className="text-xs opacity-75 mt-1">{error}</p>
                             </div>
                         </div>
                     ) : estudiantesConNotas.length === 0 ? (
-                        <div className="text-center py-12">
-                            <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                            <h3 className="text-xl font-bold text-gray-100 mb-2">
-                                No hay estudiantes con notas
-                            </h3>
-                            <p className="text-gray-400">
-                                Esta sección no tiene estudiantes con notas asignadas.
-                            </p>
+                        <div className="flex justify-center items-center h-full">
+                            <div className="text-center">
+                                <User className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                                <h3 className="text-lg font-bold text-gray-100 mb-2">
+                                    No hay estudiantes registrados
+                                </h3>
+                                <p className="text-sm text-gray-400">
+                                    Esta sección no tiene estudiantes inscritos.
+                                </p>
+                            </div>
                         </div>
                     ) : (
-                        <div className="space-y-6">
-                            <AnimatePresence>
-                                {estudiantesConNotas.map((estudiante, index) => (
-                                    <motion.div
-                                        key={estudiante.inscripcionId}
-                                        initial={{ opacity: 0, x: -20 }}
-                                        animate={{ opacity: 1, x: 0 }}
-                                        transition={{ delay: index * 0.1 }}
-                                    >
-                                        <EstudianteNotasCard
-                                            estudiante={estudiante}
-                                            evaluaciones={evaluaciones}
-                                            onClose={handleClose}
-                                        />
-                                    </motion.div>
-                                ))}
-                            </AnimatePresence>
+                        <div className="h-full overflow-y-auto">
+                            {/* Info adicional si no hay notas */}
+                            {estadisticas.estudiantesConNotas === 0 && (
+                                <div className="m-4 bg-yellow-900 bg-opacity-30 border border-yellow-700 rounded-lg p-3">
+                                    <p className="text-yellow-200 text-sm">
+                                        📝 {estadisticas.totalEstudiantes} estudiantes inscritos sin notas asignadas aún.
+                                    </p>
+                                </div>
+                            )}
+                            
+                            {/* Tabla compacta */}
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gray-900 bg-opacity-50 sticky top-0">
+                                        <tr>
+                                            <th className="text-left px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Estudiante
+                                            </th>
+                                            {evaluaciones.map((evaluacion) => (
+                                                <th key={evaluacion.evaluacionId} className="text-center px-3 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider min-w-[80px]">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="truncate max-w-[60px]" title={evaluacion.tipoNombre}>
+                                                            {evaluacion.tipoNombre}
+                                                        </span>
+                                                        <span className="text-xs text-gray-500">
+                                                            {evaluacion.porcentaje}%
+                                                        </span>
+                                                    </div>
+                                                </th>
+                                            ))}
+                                            <th className="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Final
+                                            </th>
+                                            <th className="text-center px-4 py-3 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                                                Estado
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-700">
+                                        <AnimatePresence>
+                                            {estudiantesConNotas.map((estudiante, index) => (
+                                                <EstudianteNotaRow
+                                                    key={estudiante.inscripcionId}
+                                                    estudiante={estudiante}
+                                                    evaluaciones={evaluaciones}
+                                                    index={index}
+                                                />
+                                            ))}
+                                        </AnimatePresence>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     )}
                 </div>
 
-                {/* Footer */}
-                <div className="p-6 border-t border-gray-700 bg-gray-900 bg-opacity-50">
-                    <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-4">
-                        <h4 className="text-blue-300 font-semibold mb-2">Información del cálculo de notas:</h4>
-                        <div className="text-blue-200 text-sm space-y-1">
-                            <p>• La nota final se calcula sumando cada evaluación multiplicada por su porcentaje.</p>
-                            <p>• Para aprobar se requiere una nota final ≥ 70 y tener todas las evaluaciones completas.</p>
-                            <p>• Los estudiantes están ordenados por nota final (mayor a menor).</p>
+                {/* Footer - Fijo */}
+                <div className="flex-shrink-0 p-4 border-t border-gray-700 bg-gray-900 bg-opacity-50">
+                    <div className="bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-3">
+                        <h4 className="text-blue-300 font-medium mb-1 text-sm">Información:</h4>
+                        <div className="text-blue-200 text-xs space-y-1">
+                            <p>• La nota de aprobacion es 70.</p>
                         </div>
                     </div>
                 </div>
