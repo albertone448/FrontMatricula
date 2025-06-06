@@ -88,6 +88,7 @@ export const authUtils = {
 		localStorage.removeItem("tokenExpiration");
 		localStorage.removeItem("pendingUserId");
 		localStorage.removeItem("userEmail");
+
 	},
 
 	// Verificar si el usuario tiene un rol específico

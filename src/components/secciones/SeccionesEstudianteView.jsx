@@ -272,15 +272,30 @@ const SeccionesEstudianteView = ({
                             tipoNombre: getTipoEvaluacionNombre(evaluacion.tipEvaluacionId)
                         }));
 
-                        // Obtener notas del estudiante para esta sección
-                        const notasResponse = await api.get(`Nota/GetNotasPorSeccion/${seccion.seccionId}`);
-                        const todasLasNotas = notasResponse.data;
-                        
-                        // Filtrar solo las notas del estudiante actual
-                        notas = todasLasNotas.filter(nota => nota.inscripcionId === inscripcion.inscripcionId);
+                        // ✅ ARREGLO: Obtener notas del estudiante para esta sección con manejo de 404
+                        try {
+                            const notasResponse = await api.get(`Nota/GetNotasPorSeccion/${seccion.seccionId}`);
+                            const todasLasNotas = notasResponse.data;
+                            
+                            // Filtrar solo las notas del estudiante actual
+                            notas = todasLasNotas.filter(nota => nota.inscripcionId === inscripcion.inscripcionId);
+                        } catch (notasError) {
+                            // ✅ Si es 404, significa que no hay notas, no es un error
+                            if (notasError.response?.status === 404) {
+                                console.log(`📝 No hay notas para sección ${seccion.seccionId} (404), continuando con array vacío`);
+                                notas = [];
+                            } else {
+                                // Si es otro error, re-lanzarlo
+                                console.error(`Error obteniendo notas para sección ${seccion.seccionId}:`, notasError);
+                                notas = []; // Continuar con array vacío para no romper la funcionalidad
+                            }
+                        }
                         
                     } catch (evalError) {
                         console.error(`Error obteniendo evaluaciones para sección ${seccion.seccionId}:`, evalError);
+                        // Continuar con arrays vacíos para no romper la funcionalidad
+                        evaluaciones = [];
+                        notas = [];
                     }
 
                     return {
@@ -439,7 +454,7 @@ const SeccionesEstudianteView = ({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
             >
                 <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-4 border border-gray-700">
                     <div className="flex items-center">
@@ -473,18 +488,6 @@ const SeccionesEstudianteView = ({
                         <div className="ml-3">
                             <p className="text-sm font-medium text-gray-400">En Progreso</p>
                             <p className="text-xl font-bold text-gray-100">{estadisticas.seccionesEnProgreso}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-4 border border-gray-700">
-                    <div className="flex items-center">
-                        <div className="p-2 bg-purple-500 bg-opacity-20 rounded-lg">
-                            <BarChart3 className="w-5 h-5 text-purple-400" />
-                        </div>
-                        <div className="ml-3">
-                            <p className="text-sm font-medium text-gray-400">Promedio</p>
-                            <p className="text-xl font-bold text-gray-100">{estadisticas.promedioGeneral}</p>
                         </div>
                     </div>
                 </div>
