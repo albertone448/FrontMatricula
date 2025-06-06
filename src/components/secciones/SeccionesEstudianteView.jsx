@@ -272,15 +272,30 @@ const SeccionesEstudianteView = ({
                             tipoNombre: getTipoEvaluacionNombre(evaluacion.tipEvaluacionId)
                         }));
 
-                        // Obtener notas del estudiante para esta sección
-                        const notasResponse = await api.get(`Nota/GetNotasPorSeccion/${seccion.seccionId}`);
-                        const todasLasNotas = notasResponse.data;
-                        
-                        // Filtrar solo las notas del estudiante actual
-                        notas = todasLasNotas.filter(nota => nota.inscripcionId === inscripcion.inscripcionId);
+                        // ✅ ARREGLO: Obtener notas del estudiante para esta sección con manejo de 404
+                        try {
+                            const notasResponse = await api.get(`Nota/GetNotasPorSeccion/${seccion.seccionId}`);
+                            const todasLasNotas = notasResponse.data;
+                            
+                            // Filtrar solo las notas del estudiante actual
+                            notas = todasLasNotas.filter(nota => nota.inscripcionId === inscripcion.inscripcionId);
+                        } catch (notasError) {
+                            // ✅ Si es 404, significa que no hay notas, no es un error
+                            if (notasError.response?.status === 404) {
+                                console.log(`📝 No hay notas para sección ${seccion.seccionId} (404), continuando con array vacío`);
+                                notas = [];
+                            } else {
+                                // Si es otro error, re-lanzarlo
+                                console.error(`Error obteniendo notas para sección ${seccion.seccionId}:`, notasError);
+                                notas = []; // Continuar con array vacío para no romper la funcionalidad
+                            }
+                        }
                         
                     } catch (evalError) {
                         console.error(`Error obteniendo evaluaciones para sección ${seccion.seccionId}:`, evalError);
+                        // Continuar con arrays vacíos para no romper la funcionalidad
+                        evaluaciones = [];
+                        notas = [];
                     }
 
                     return {
