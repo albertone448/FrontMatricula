@@ -121,7 +121,22 @@ export const useInscripciones = () => {
                 // console.log("ℹ️ Populated notasMap:", notasMap); // Removed log
             }
 
-            // 6. Procesar y combinar la información
+            // 6. Obtener el número de inscritos para cada sección
+            const inscritosPromises = seccionesFiltradas.map(seccion =>
+                api.get(`Inscripcion/ListarUsuariosPorSeccion?id=${seccion.seccionId}`)
+                    .then(response => ({
+                        seccionId: seccion.seccionId,
+                        inscritosCount: response.data.length
+                    }))
+                    .catch(() => ({ seccionId: seccion.seccionId, inscritosCount: 0 }))
+            );
+            const inscritosCounts = await Promise.all(inscritosPromises);
+            const inscritosMap = inscritosCounts.reduce((map, item) => {
+                map[item.seccionId] = item.inscritosCount;
+                return map;
+            }, {});
+
+            // 7. Procesar y combinar la información
             const seccionesProcesadas = seccionesFiltradas.map((seccion, index) => {
                 const curso = cursos[index];
                 const inscripcion = inscripcionesActuales.find(i => i.seccionId === seccion.seccionId);
@@ -136,8 +151,6 @@ export const useInscripciones = () => {
                 }
                 const tieneNotasParaEstaSeccion = lookupNotas;
 
-                // Removed processing logs for sections
-
                 return {
                     ...seccion,
                     curso,
@@ -145,7 +158,8 @@ export const useInscripciones = () => {
                     profesor, 
                     inscrito: estaInscrito,
                     inscripcionId: inscripcionIdActual,
-                    tieneNotas: tieneNotasParaEstaSeccion 
+                    tieneNotas: tieneNotasParaEstaSeccion,
+                    inscritos: inscritosMap[seccion.seccionId] || 0
                 };
             }).filter(item => item.curso && item.horario); 
 

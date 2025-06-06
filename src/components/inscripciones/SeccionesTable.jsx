@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Eye } from "lucide-react";
 
 export const SeccionesTable = ({ 
     secciones, 
     loading, 
     handleInscribirMateria, 
-    handleRetirarMateria 
+    handleRetirarMateria,
+    handleVerDetalles
 }) => {
     return (
         <div className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl border border-gray-700 overflow-hidden">
@@ -104,7 +105,14 @@ export const SeccionesTable = ({
 
                                 {/* Cupos */}
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                                    {seccion.cuposMax}
+                                    <span className={
+                                        Math.max(0, (seccion.cuposMax || 0) - (seccion.inscritos || 0)) > 0 
+                                        ? 'text-green-400' 
+                                        : 'text-red-400'
+                                    }>
+                                        {Math.max(0, (seccion.cuposMax || 0) - (seccion.inscritos || 0))}
+                                    </span>
+                                    <span> / {seccion.cuposMax || 0}</span>
                                 </td>
 
                                 {/* Créditos */}
@@ -124,26 +132,35 @@ export const SeccionesTable = ({
                                 </td>
 
                                 {/* Acciones */}
-                                <td className="px-3 py-2 text-right text-xs font-medium text-gray-400 uppercase tracking-wider w-20"> {/* Ancho Acciones */}
-                                    <button
-                                        onClick={() => seccion.inscrito 
-                                            ? handleRetirarMateria(seccion.inscripcionId, seccion.curso, seccion.horario, seccion.grupo) 
-                                            : handleInscribirMateria(seccion.seccionId, seccion.curso.nombre)
-                                        }
-                                        disabled={loading || (seccion.inscrito && seccion.tieneNotas)}
-                                        title={seccion.inscrito && seccion.tieneNotas ? "No se puede retirar una materia con notas" : (seccion.inscrito ? "Retirar materia" : "Inscribir materia")}
-                                        className={`w-20 text-center px-3 py-1.5 rounded-lg font-medium transition duration-200 
-                                            ${loading ? "opacity-50 cursor-not-allowed " : ""}
-                                            ${(seccion.inscrito && seccion.tieneNotas) 
-                                                ? "bg-gray-500 text-gray-300 cursor-not-allowed opacity-70" 
-                                                : seccion.inscrito 
-                                                    ? "bg-red-600 hover:bg-red-700 text-white" 
-                                                    : "bg-blue-600 hover:bg-blue-700 text-white"
-                                        }`}
-                                    >
-                                        {loading ? "..." : 
-                                        seccion.inscrito ? "Retirar" : "Inscribir"}
-                                    </button>
+                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div className="flex items-center justify-end space-x-2">
+                                        <button
+                                            onClick={() => handleVerDetalles(seccion)}
+                                            title="Ver detalles"
+                                            className="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white transition duration-200"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => seccion.inscrito 
+                                                ? handleRetirarMateria(seccion.inscripcionId, seccion.curso, seccion.horario, seccion.grupo) 
+                                                : handleInscribirMateria(seccion.seccionId, seccion.curso.nombre)
+                                            }
+                                            disabled={loading || (seccion.inscrito && seccion.tieneNotas)}
+                                            title={seccion.inscrito && seccion.tieneNotas ? "No se puede retirar una materia con notas" : (seccion.inscrito ? "Retirar materia" : "Inscribir materia")}
+                                            className={`w-24 text-center px-3 py-1.5 rounded-lg font-medium transition duration-200 
+                                                ${loading ? "opacity-50 cursor-not-allowed " : ""}
+                                                ${(seccion.inscrito && seccion.tieneNotas) 
+                                                    ? "bg-gray-500 text-gray-300 cursor-not-allowed opacity-70" 
+                                                    : seccion.inscrito 
+                                                        ? "bg-red-600 hover:bg-red-700 text-white" 
+                                                        : "bg-blue-600 hover:bg-blue-700 text-white"
+                                            }`}
+                                        >
+                                            {loading ? "..." : 
+                                            seccion.inscrito ? "Retirar" : "Inscribir"}
+                                        </button>
+                                    </div>
                                 </td>
                             </motion.tr>
                         ))}
