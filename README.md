@@ -10,7 +10,7 @@ Interfaz de usuario para un sistema de gestión de matrículas universitarias, p
 
 ![Screenshot 1](./src/assets/screenshotHorarioEstudiante.png)
 ![Screenshot 2](./src/assets/screenshotInicioProfesor.png)
-![Screenshot 3](./src.assets/screenshotInscripciones.png)
+![Screenshot 3](./src/assets/screenshotInscripciones.png)
 
 ## ✨ Características Principales
 
