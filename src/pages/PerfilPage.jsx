@@ -6,13 +6,14 @@ import { useProfile } from "../hooks/useProfile";
 import ProfileHeader from "../components/perfil/ProfileHeader";
 import ProfileStats from "../components/perfil/ProfileStats";
 import ProfileActions from "../components/perfil/ProfileActions";
-import EditProfileModal from "../components/perfil/EditProfileModal";
+
 
 const PerfilPage = () => {
 	const location = useLocation();
 	const { user, loading, error, fetchProfile, updateProfile } = useProfile();
 	const [successMessage, setSuccessMessage] = useState("");
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+	const [editMessage, setEditMessage] = useState(""); // Added for edit message
 
 	// Verificar si viene mensaje de éxito desde cambio de contraseña
 	useEffect(() => {
@@ -30,7 +31,9 @@ const PerfilPage = () => {
 	}, [fetchProfile]);
 
 	const handleEditProfile = useCallback(() => {
-		setIsEditModalOpen(true);
+		// confirm("por favor contactar a nuestro equipo de soporte si hay erroress con los detalles del perfil")
+		setEditMessage("Por favor, contactar a nuestro equipo de soporte si hay errores con los detalles del perfil.");
+		setTimeout(() => setEditMessage(''), 5000); // Auto-clear after 5 seconds
 	}, []);
 
 	const handleUpdateSuccess = useCallback((message) => {
@@ -47,6 +50,10 @@ const PerfilPage = () => {
 
 	const clearSuccessMessage = useCallback(() => {
 		setSuccessMessage('');
+	}, []);
+
+	const clearEditMessage = useCallback(() => { // Added to clear edit message
+		setEditMessage('');
 	}, []);
 
 	return (
@@ -100,6 +107,28 @@ const PerfilPage = () => {
 						)}
 					</AnimatePresence>
 
+					{/* Mensaje de edición */}
+					<AnimatePresence>
+						{editMessage && (
+							<motion.div
+								initial={{ opacity: 0, y: -20 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, y: -20 }}
+								className="bg-blue-500 bg-opacity-20 border border-blue-500 text-blue-400 px-4 py-3 rounded-lg text-sm flex items-center mb-6" // Using blue for informational
+							>
+								<div className="flex-1">
+									<p className="font-medium">{editMessage}</p>
+								</div>
+								<button
+									onClick={clearEditMessage}
+									className="ml-2 text-blue-300 hover:text-blue-200 transition-colors duration-200"
+								>
+									<span className="text-xl">&times;</span>
+								</button>
+							</motion.div>
+						)}
+					</AnimatePresence>
+
 					{/* Header del perfil */}
 					<ProfileHeader 
 						user={user} 
@@ -135,13 +164,7 @@ const PerfilPage = () => {
 					)}
 				</main>
 
-				<EditProfileModal
-					isOpen={isEditModalOpen}
-					onClose={() => setIsEditModalOpen(false)}
-					onSuccess={handleUpdateSuccess}
-					userToEdit={user}
-					updateUser={updateProfile}
-				/>
+				
 			</div>
 		</div>
 	);

@@ -191,6 +191,17 @@ export const useInscripciones = () => {
             return false;
         }
 
+        // Verificar si ya está inscrito en otra sección del mismo curso (por código)
+        const cursoYaInscrito = seccionesDisponibles.find(s =>
+            s.inscrito &&
+            s.curso?.codigo === seccion.curso?.codigo
+        );
+
+        if (cursoYaInscrito) {
+            setError(`Ya estás inscrito en ${cursoYaInscrito.curso.nombre} (Código: ${cursoYaInscrito.curso.codigo}). No puedes inscribir dos veces el mismo curso.`);
+            return false;
+        }
+
         // Verificar si la carrera de la sección es permitida para el usuario
         if (seccion.carrera && seccion.carrera !== "Carrera Libre" && seccion.carrera !== userCarrera) {
             setError(`Solo puedes inscribir materias de tu carrera (${userCarrera}) o de Carrera Libre.`);
