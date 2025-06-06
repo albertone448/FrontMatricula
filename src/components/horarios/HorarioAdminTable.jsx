@@ -7,6 +7,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 	const [searchTerm, setSearchTerm] = useState("");
 	const [filterDia, setFilterDia] = useState("");
 	const [filterHorario, setFilterHorario] = useState("");
+	const [filterPeriodo, setFilterPeriodo] = useState("");
 	const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
 	const [isSearching, setIsSearching] = useState(false);
 	const itemsPerPage = 10;
@@ -37,7 +38,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 				dia: horario?.dia || "Sin asignar",
 				horaInicio: horario?.horaInicio || "00:00:00",
 				horaFin: horario?.horaFin || "00:00:00",
-				franjaHoraria: horario ? `${horario.horaInicio.slice(0,5)} - ${horario.horaFin.slice(0,5)}` : "Sin horario",
+				horario: horario ? `${horario.horaInicio.slice(0,5)} - ${horario.horaFin.slice(0,5)}` : "Sin horario",
 				codigoCurso: curso?.codigo || `C${seccion.cursoId}`,
 				nombreCurso: curso?.nombre || `Curso ${seccion.cursoId}`,
 				creditosCurso: curso?.creditos || 0,
@@ -52,7 +53,8 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 
 	// Obtener valores únicos para filtros
 	const diasUnicos = [...new Set(datosCompletos.map(item => item.dia))].sort();
-	const horariosUnicos = [...new Set(datosCompletos.map(item => item.franjaHoraria))].sort();
+	const horariosUnicos = [...new Set(datosCompletos.map(item => item.horario))].sort();
+	const periodosUnicos = [...new Set(datosCompletos.map(item=>item.periodo))].sort();
 
 	// Filtrar datos según búsqueda y filtros
 	const datosFiltrados = useMemo(() => {
@@ -78,8 +80,13 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 
 		// Filtro por horario
 		if (filterHorario) {
-			resultado = resultado.filter(item => item.franjaHoraria === filterHorario);
+			resultado = resultado.filter(item => item.horario === filterHorario);
 		}
+
+		if (filterPeriodo)
+			{
+				resultado=resultado.filter(item => item.periodo === filterPeriodo);
+			}
 
 		// Ordenar por día de la semana y luego por hora
 		const ordenDias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
@@ -95,7 +102,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 		});
 
 		return resultado;
-	}, [datosCompletos, debouncedSearchTerm, filterDia, filterHorario]);
+	}, [datosCompletos, debouncedSearchTerm, filterDia, filterHorario,filterPeriodo]);
 
 	// Calcular paginación
 	const totalPages = Math.ceil(datosFiltrados.length / itemsPerPage);
@@ -105,7 +112,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 	// Resetear a página 1 cuando cambien los filtros
 	useEffect(() => {
 		setCurrentPage(1);
-	}, [debouncedSearchTerm, filterDia, filterHorario]);
+	}, [debouncedSearchTerm, filterDia, filterHorario,filterPeriodo]);
 
 	// Resetear a página 1 si la página actual es mayor al total de páginas
 	useEffect(() => {
@@ -126,6 +133,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 		setSearchTerm("");
 		setFilterDia("");
 		setFilterHorario("");
+		setFilterPeriodo("");
 	};
 
 	// Componente de carga
@@ -145,7 +153,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 		>
 			<Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
 			<p className="text-gray-400">
-				{debouncedSearchTerm || filterDia || filterHorario ? 
+				{debouncedSearchTerm || filterDia || filterHorario|| filterPeriodo? 
 					"No se encontraron horarios que coincidan con los filtros" : 
 					"No hay horarios configurados"
 				}
@@ -245,8 +253,8 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 								) : (
 									<>
 										{datosFiltrados.length} {datosFiltrados.length === 1 ? 'horario' : 'horarios'}
-										{(debouncedSearchTerm || filterDia || filterHorario) && ` encontrado${datosFiltrados.length === 1 ? '' : 's'}`}
-										{!debouncedSearchTerm && !filterDia && !filterHorario && ` total${datosFiltrados.length === 1 ? '' : 'es'}`}
+										{(debouncedSearchTerm || filterDia || filterHorario || filterPeriodo) && ` encontrado${datosFiltrados.length === 1 ? '' : 's'}`}
+										{!debouncedSearchTerm && !filterDia && !filterHorario && !filterPeriodo && ` total${datosFiltrados.length === 1 ? '' : 'es'}`}
 									</>
 								)}
 							</p>
@@ -305,8 +313,22 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 									))}
 								</select>
 							</div>
+							<div className="relative">
+							<select
+								value={filterPeriodo}
+								onChange={(e)=>setFilterPeriodo(e.target.value)}
+								className="appearance-none bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 pr-8 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent min-w-[140px]"
+								>
+									<option value="">Todos los Periodos</option>
+									{periodosUnicos.map((periodo) => (
+										<option key={periodo} value={periodo}>{periodo}</option>
+									))}
+								</select>
+							</div>
 
-							{(searchTerm || filterDia || filterHorario) && (
+							
+
+							{(searchTerm || filterDia || filterHorario || filterPeriodo) && (
 								<button
 									onClick={clearFilters}
 									className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 text-sm"
@@ -327,7 +349,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 					<AnimatePresence mode="wait">
 						{currentItems.length > 0 ? (
 							<motion.div
-								key={`table-content-${debouncedSearchTerm}-${filterDia}-${filterHorario}-${currentPage}`}
+								key={`table-content-${debouncedSearchTerm}-${filterDia}-${filterHorario}-${filterPeriodo}${currentPage}`}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								exit={{ opacity: 0 }}
@@ -389,7 +411,7 @@ const HorarioAdminTable = ({ horarios = [], secciones = [], cursos = [], loading
 														<div className="flex items-center">
 															<Clock className="w-4 h-4 mr-2 text-green-400" />
 															<span className="text-sm text-gray-300">
-																{item.franjaHoraria}
+																{item.horario}
 															</span>
 														</div>
 													</td>
