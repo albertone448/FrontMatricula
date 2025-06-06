@@ -96,6 +96,7 @@ const ProfileActions = ({ user, onEditProfile, onDownloadData }) => {
 			localStorage.removeItem("usuarioId");
 			localStorage.removeItem("pendingUserId");
 			localStorage.removeItem("userEmail");
+			localStorage.removeItem("token");
 			
 			// Redirigir al login
 			navigate('/login');
