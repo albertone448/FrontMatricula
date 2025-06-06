@@ -8,9 +8,9 @@
 
 Interfaz de usuario para un sistema de gestión de matrículas universitarias, permitiendo a estudiantes, profesores y administradores interactuar con la plataforma.
 
-![Screenshot 1](./public/screenshot-for-readme-1.png)
-![Screenshot 2](./public/screenshot-for-readme-2.png)
-![Screenshot 3](./public/screenshot-for-readme-3.png)
+![Screenshot 1](./src/assets/screenshotHorarioEstudiante.png)
+![Screenshot 2](./src/assets/screenshotInicioProfesor.png)
+![Screenshot 3](./src.assets/screenshotInscripciones.png)
 
 ## ✨ Características Principales
 
