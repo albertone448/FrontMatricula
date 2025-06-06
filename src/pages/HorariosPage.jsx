@@ -9,6 +9,7 @@ import LoadingSpinner from "../components/horarios/LoadingSpinner";
 import ErrorMessage from "../components/horarios/ErrorMessage";
 import HorarioAdminTable from "../components/horarios/HorarioAdminTable";
 import { motion } from "framer-motion"; // ✅ Agregar esta línea
+import { PeriodoSelector } from "../components/inscripciones/PeriodoSelector";
 
 const HorariosPage = () => {
 	const { userRole, loading: roleLoading } = useUserRole();
