@@ -28,6 +28,15 @@ export const useNotas = () => {
             return response.data;
         } catch (error) {
             console.error("❌ Error al obtener notas:", error);
+            
+            // ✅ ARREGLO: Si es 404, significa que no hay notas, no es un error real
+            if (error.response?.status === 404) {
+                console.log('📝 No hay notas disponibles para esta sección (404), retornando array vacío');
+                const emptyNotas = [];
+                setNotas(emptyNotas);
+                return emptyNotas;
+            }
+            
             const errorMessage = error.response?.data?.message || error.message || "Error al cargar las notas";
             setError(errorMessage);
             throw error;
@@ -252,8 +261,19 @@ export const useNotas = () => {
             // 1. Obtener inscripciones de la sección
             const inscripciones = await fetchInscripcionesPorSeccion(seccionId);
             
-            // 2. Obtener todas las notas de la sección
-            const todasLasNotas = await fetchNotasPorSeccion(seccionId);
+            // 2. Obtener todas las notas de la sección - ✅ ARREGLO: Manejar 404
+            let todasLasNotas = [];
+            try {
+                todasLasNotas = await fetchNotasPorSeccion(seccionId);
+            } catch (notasError) {
+                // Si hay error obteniendo notas y no es 404, re-lanzar el error
+                if (notasError.response?.status !== 404) {
+                    throw notasError;
+                }
+                // Si es 404, continuar con array vacío (ya manejado en fetchNotasPorSeccion)
+                console.log('📝 No hay notas para esta sección, continuando con array vacío');
+                todasLasNotas = [];
+            }
             
             // 3. Filtrar notas de la evaluación específica
             const notasEvaluacion = todasLasNotas.filter(nota => nota.evaluacionId === evaluacionId);
