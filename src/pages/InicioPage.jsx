@@ -4,12 +4,17 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 import Header from "../components/common/Header";
 import { useUserRole } from "../contexts/UserRoleContext";
 import { useProfesorDashboard } from "../hooks/useProfesorDashboard";
+import { useEstudianteDashboard } from "../hooks/useEstudianteDashboard";
 
 // Componentes de inicio para profesor
 import WelcomeHeader from "../components/inicio/WelcomeHeader";
 import ProfesorStatsCards from "../components/inicio/ProfesorStatsCards";
 import MisSeccionesResumen from "../components/inicio/MisSeccionesResumen";
 import MiniHorarioSemanal from "../components/inicio/MiniHorarioSemanal";
+
+// Componentes de inicio para estudiante
+import EstudianteStatsCards from "../components/inicio/EstudianteStatsCards";
+import MisMateriasResumen from "../components/inicio/MisMateriasResumen";
 
 const ProfesorDashboard = () => {
     const { currentUser } = useUserRole();
@@ -81,6 +86,76 @@ const ProfesorDashboard = () => {
     );
 };
 
+const EstudianteDashboard = () => {
+    const { currentUser } = useUserRole();
+    const {
+        secciones,
+        loading,
+        error,
+        seccionesCount,
+        creditosInscritos,
+        periodoActual,
+        refreshData
+    } = useEstudianteDashboard();
+
+    const nombreCompleto = currentUser ? 
+        `${currentUser.nombre} ${currentUser.apellido1}`.trim() : 
+        "Estudiante";
+
+    return (
+        <div className="space-y-8">
+            {/* Mensaje de error */}
+            <AnimatePresence>
+                {error && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="bg-red-500 bg-opacity-20 border border-red-500 text-red-400 px-4 py-3 rounded-lg text-sm flex items-center"
+                    >
+                        <AlertCircle className="w-5 h-5 mr-2" />
+                        <div className="flex-1">
+                            <p className="font-medium">Error al cargar datos</p>
+                            <p className="text-xs opacity-75 mt-1">{error}</p>
+                        </div>
+                        <button
+                            onClick={refreshData}
+                            className="ml-2 text-red-300 hover:text-red-200 transition-colors duration-200"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Header de bienvenida */}
+            <WelcomeHeader userName={nombreCompleto} />
+
+            {/* Tarjetas de estadísticas */}
+            <EstudianteStatsCards
+                seccionesCount={seccionesCount}
+                creditosInscritos={creditosInscritos}
+                periodoActual={periodoActual}
+                loading={loading}
+            />
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                {/* Resumen de mis materias */}
+                <MisMateriasResumen
+                    secciones={secciones}
+                    loading={loading}
+                />
+
+                {/* Mini horario semanal */}
+                <MiniHorarioSemanal
+                    secciones={secciones}
+                    loading={loading}
+                />
+            </div>
+        </div>
+    );
+};
+
 const GeneralDashboard = () => {
     return (
         <div className="space-y-8">
@@ -93,7 +168,7 @@ const GeneralDashboard = () => {
                     Bienvenido al Sistema de Gestión Universitaria
                 </h2>
                 <p className="text-gray-400">
-                    Dashboard general para estudiantes y administradores estará disponible próximamente.
+                    Dashboard general para administradores estará disponible próximamente.
                 </p>
             </motion.div>
         </div>
@@ -127,6 +202,8 @@ const InicioPage = () => {
                 {/* Dashboard específico según el rol */}
                 {userRole === "Profesor" ? (
                     <ProfesorDashboard />
+                ) : userRole === "Estudiante" ? (
+                    <EstudianteDashboard />
                 ) : (
                     <GeneralDashboard />
                 )}

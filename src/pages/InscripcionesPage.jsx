@@ -15,6 +15,24 @@ import { SeccionesTable } from "../components/inscripciones/SeccionesTable";
 import { PeriodoSelector } from "../components/inscripciones/PeriodoSelector";
 import {RefreshCw, ShieldX, Home} from "lucide-react";
 
+// ✅ NUEVA FUNCIÓN: Calcular el periodo actual basado en la fecha real
+const calcularPeriodoActual = () => {
+    const ahora = new Date();
+    const año = ahora.getFullYear();
+    const mes = ahora.getMonth() + 1; // getMonth() devuelve 0-11
+
+    let periodo;
+    if (mes >= 1 && mes <= 4) {
+        periodo = "I";
+    } else if (mes >= 5 && mes <= 8) {
+        periodo = "II";
+    } else {
+        periodo = "III";
+    }
+
+    return `${año}-${periodo}`;
+};
+
 const InscripcionesPage = () => {
     const navigate = useNavigate();
     const { userRole, currentUser, loading: roleLoading } = useUserRole();
@@ -35,11 +53,11 @@ const InscripcionesPage = () => {
         seccionesDisponibles,
         totalCreditos,
         modalRetirarOpen,
-        inscripcionParaRetiro, // Changed from seccionSeleccionada
+        inscripcionParaRetiro,
         setPeriodosDisponibles,
         setPeriodoSeleccionado,
         setModalRetirarOpen,
-        setInscripcionParaRetiro, // Changed from setSeccionSeleccionada
+        setInscripcionParaRetiro,
         fetchPeriodosDisponibles,
         fetchSeccionesDisponibles,
         handleInscribirMateria,
@@ -54,19 +72,38 @@ const InscripcionesPage = () => {
         setModalDetallesOpen(true);
     };
 
-    // Cargar datos cuando el componente se monte
+    // ✅ MEJORADO: Cargar datos con selección inteligente del periodo
     useEffect(() => {
         if (!roleLoading && userRole === "Estudiante") {
             fetchPeriodosDisponibles().then(periodos => {
                 setPeriodosDisponibles(periodos);
+                
                 if (periodos.length > 0) {
-                    const periodoReciente = periodos[0];
-                    setPeriodoSeleccionado(periodoReciente);
-                    fetchSeccionesDisponibles(periodoReciente);
+                    // ✅ NUEVA LÓGICA: Intentar seleccionar el periodo actual primero
+                    const periodoActual = calcularPeriodoActual();
+                    console.log('📅 Periodo actual calculado:', periodoActual);
+                    console.log('📅 Periodos disponibles:', periodos);
+                    
+                    // Buscar si el periodo actual existe en los disponibles
+                    const periodoEncontrado = periodos.find(p => p === periodoActual);
+                    
+                    let periodoASeleccionar;
+                    if (periodoEncontrado) {
+                        console.log('✅ Periodo actual encontrado, seleccionando:', periodoEncontrado);
+                        periodoASeleccionar = periodoEncontrado;
+                    } else {
+                        console.log('⚠️ Periodo actual no encontrado, seleccionando el más reciente:', periodos[0]);
+                        periodoASeleccionar = periodos[0]; // Fallback al más reciente
+                    }
+                    
+                    setPeriodoSeleccionado(periodoASeleccionar);
+                    fetchSeccionesDisponibles(periodoASeleccionar);
                 } else {
                     fetchSeccionesDisponibles();
                 }
             });
+            
+            // Configurar filtro de carrera del usuario
             if (user && user.carrera) {
                 setFilterCarrera(user.carrera);
             }
@@ -92,8 +129,6 @@ const InscripcionesPage = () => {
 
     // Wrapper for handleInscribirMateria to inject user's career
     const handleInscribirMateriaWrapper = (seccionId, nombreCurso) => {
-        // The hook's handleInscribirMateria now expects userCarrera as the third argument.
-        // user.carrera comes from the useProfile hook.
         handleInscribirMateria(seccionId, nombreCurso, user?.carrera);
     };
 
@@ -188,16 +223,13 @@ const InscripcionesPage = () => {
                         open={modalRetirarOpen}
                         onClose={() => {
                             setModalRetirarOpen(false);
-                            setInscripcionParaRetiro(null); // Changed from setSeccionSeleccionada
+                            setInscripcionParaRetiro(null);
                         }}
                         onConfirm={handleConfirmRetiro}
-                        // Pass specific details from inscripcionParaRetiro to the modal
-                        // Assuming ConfirmRetirarModal expects props like curso, horario, grupo
                         curso={inscripcionParaRetiro.curso} 
                         horario={inscripcionParaRetiro.horario}
                         grupo={inscripcionParaRetiro.grupo}
-                        profesor={inscripcionParaRetiro.profesor} // Added profesor prop
-                        // If ConfirmRetirarModal expects the whole object, you might pass it as a prop e.g., inscripcionData={inscripcionParaRetiro}
+                        profesor={inscripcionParaRetiro.profesor}
                     />
                 )}
 
@@ -220,14 +252,14 @@ const InscripcionesPage = () => {
                     >
                         <p className={`text-red-400 text-center ${handleRefresh ? 'mb-3' : ''}`}>{error}</p>
                         {handleRefresh && (
-                            <div className="text-center"> {/* This div centers the button */}
+                            <div className="text-center">
                                 <label
                                     onClick={handleRefresh}
-                                    className="px-4 py-2 text-sm  hover:bg-opacity-40 text-red-200 hover:text-red-100 rounded-md transition-colors duration-150"
+                                    className="px-4 py-2 text-sm hover:bg-opacity-40 text-red-200 hover:text-red-100 rounded-md transition-colors duration-150 cursor-pointer"
                                 >
-                                    <div className="flex items-center justify-center space-x-5">
-										<RefreshCw className="w-4 h-4 mr-2"> </RefreshCw>
-										Intentar de nuevo
+                                    <div className="flex items-center justify-center space-x-2">
+										<RefreshCw className="w-4 h-4" />
+										<span>Intentar de nuevo</span>
 									</div>
                                 </label>
                             </div>
@@ -241,7 +273,8 @@ const InscripcionesPage = () => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
                         className="bg-green-500 bg-opacity-10 border border-green-500 rounded-lg p-4 mb-6"
-                    >                    <p className="text-green-400 text-center">{successMessage}</p>
+                    >
+                        <p className="text-green-400 text-center">{successMessage}</p>
                     </motion.div>
                 )}
 
@@ -279,12 +312,10 @@ const InscripcionesPage = () => {
                 <SeccionesTable
                     secciones={seccionesFiltradas}
                     loading={loading}
-                    handleInscribirMateria={handleInscribirMateriaWrapper} // Use the wrapper function
+                    handleInscribirMateria={handleInscribirMateriaWrapper}
                     handleRetirarMateria={handleRetirarMateria}
                     handleVerDetalles={handleVerDetalles}
                 />
-
-              
             </main>
         </div>
     );
