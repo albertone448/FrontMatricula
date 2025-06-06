@@ -75,26 +75,22 @@ export const useProfesorDashboard = () => {
                 throw new Error("Usuario no autenticado");
             }
 
-            console.log("🔍 Obteniendo datos del profesor:", userId);
+            
 
             // Calcular periodo actual
             const periodoCalculado = calcularPeriodoActual();
             setPeriodoActual(periodoCalculado);
 
-            console.log("📅 Periodo actual calculado:", periodoCalculado);
+            
 
             // 1. Obtener todas las secciones
             const seccionesResponse = await api.get("Seccion/GetAllSecciones");
             const todasLasSecciones = seccionesResponse.data;
 
-            console.log("📚 Total de secciones obtenidas:", todasLasSecciones.length);
-
             // 2. Filtrar secciones del profesor actual y del periodo actual
             const seccionesDelProfesor = todasLasSecciones.filter(seccion => 
                 seccion.usuarioId === userId && seccion.periodo === periodoCalculado
             );
-
-            console.log("👨‍🏫 Secciones del profesor en periodo actual:", seccionesDelProfesor.length);
 
             setSeccionesCount(seccionesDelProfesor.length);
 
@@ -109,7 +105,7 @@ export const useProfesorDashboard = () => {
             const seccionesEnriquecidas = await Promise.all(
                 seccionesDelProfesor.map(async (seccion) => {
                     try {
-                        console.log(`🔍 Procesando sección ${seccion.seccionId}`);
+                        
 
                         // Obtener información del curso
                         const cursoInfo = await fetchCursoInfo(seccion.cursoId);
@@ -120,7 +116,7 @@ export const useProfesorDashboard = () => {
                         // Obtener número de estudiantes
                         const estudiantesCount = await fetchEstudiantesPorSeccion(seccion.seccionId);
 
-                        console.log(`📊 Sección ${seccion.seccionId}: ${estudiantesCount} estudiantes`);
+                        
 
                         return {
                             ...seccion,
@@ -149,11 +145,7 @@ export const useProfesorDashboard = () => {
                 total + (seccion.estudiantesCount || 0), 0
             );
 
-            console.log("✅ Datos del profesor procesados:", {
-                secciones: seccionesEnriquecidas.length,
-                totalEstudiantes: totalEstudiantes,
-                periodo: periodoCalculado
-            });
+           
 
             setSecciones(seccionesEnriquecidas);
             setEstudiantesCount(totalEstudiantes);

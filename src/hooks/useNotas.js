@@ -18,20 +18,16 @@ export const useNotas = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log(`🔍 Obteniendo notas para sección ${seccionId}`);
-
             const response = await api.get(`Nota/GetNotasPorSeccion/${seccionId}`);
-            
-            console.log('✅ Notas obtenidas:', response.data);
 
             setNotas(response.data);
             return response.data;
         } catch (error) {
             console.error("❌ Error al obtener notas:", error);
-            
+
             // ✅ ARREGLO: Si es 404, significa que no hay notas, no es un error real
             if (error.response?.status === 404) {
-                console.log('📝 No hay notas disponibles para esta sección (404), retornando array vacío');
+                
                 const emptyNotas = [];
                 setNotas(emptyNotas);
                 return emptyNotas;
@@ -53,11 +49,7 @@ export const useNotas = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log(`🔍 Obteniendo inscripciones para sección ${seccionId}`);
-
             const response = await api.get(`Inscripcion/ListarUsuariosPorSeccion?id=${seccionId}`);
-            
-            console.log('✅ Inscripciones obtenidas:', response.data);
 
             return response.data;
         } catch (error) {
@@ -93,11 +85,7 @@ export const useNotas = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log('🔄 Actualizando nota existente:', notaData);
-
             const response = await api.put("Nota/UpdateNota", notaData);
-            
-            console.log('✅ Nota actualizada exitosamente:', response.data);
 
             // Actualizar la nota en el estado local
             setNotas(prev => prev.map(nota => 
@@ -128,7 +116,7 @@ export const useNotas = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log('📝 Creando nueva nota:', notaData);
+           
 
             // Usar el endpoint correcto para crear nota
             const response = await api.post("Nota/CrearNota", {
@@ -137,7 +125,7 @@ export const useNotas = () => {
                 total: notaData.total
             });
             
-            console.log('✅ Nota creada exitosamente:', response.data);
+            
 
             // Agregar la nueva nota al estado local
             const nuevaNota = {
@@ -174,11 +162,7 @@ export const useNotas = () => {
             const isNewNota = !notaData.notaId || notaData.notaId === 0;
             
             if (isNewNota) {
-                console.log('📝 Creando nueva nota para estudiante:', {
-                    evaluacionId: notaData.evaluacionId,
-                    inscripcionId: notaData.inscripcionId,
-                    total: notaData.total
-                });
+            
 
                 // Crear nueva nota
                 const response = await api.post("Nota/CrearNota", {
@@ -187,7 +171,6 @@ export const useNotas = () => {
                     total: notaData.total
                 });
 
-                console.log('✅ Nueva nota creada exitosamente:', response.data);
 
                 // ✨ SOLUCIÓN: Refrescar los datos para obtener el notaId real
                 // Obtener todas las notas actualizadas de la sección
@@ -200,9 +183,7 @@ export const useNotas = () => {
                 );
 
                 const notaIdReal = notaCreada ? notaCreada.notaId : (response.data.notaId || response.data.id);
-                
-                console.log('🔍 Nota creada con ID real:', notaIdReal);
-                
+
                 return {
                     ...response.data,
                     isNew: true,
@@ -212,7 +193,7 @@ export const useNotas = () => {
                     inscripcionId: notaData.inscripcionId
                 };
             } else {
-                console.log('🔄 Actualizando nota existente:', notaData);
+                
 
                 // Actualizar nota existente
                 const response = await api.put("Nota/UpdateNota", {
@@ -222,7 +203,7 @@ export const useNotas = () => {
                     total: notaData.total
                 });
 
-                console.log('✅ Nota actualizada exitosamente:', response.data);
+                
 
                 // Actualizar la nota en el estado local
                 setNotas(prev => prev.map(nota => 
@@ -256,7 +237,7 @@ export const useNotas = () => {
         setError("");
 
         try {
-            console.log(`🔍 Obteniendo estudiantes con notas para sección ${seccionId}, evaluación ${evaluacionId}`);
+            
 
             // 1. Obtener inscripciones de la sección
             const inscripciones = await fetchInscripcionesPorSeccion(seccionId);
@@ -271,7 +252,7 @@ export const useNotas = () => {
                     throw notasError;
                 }
                 // Si es 404, continuar con array vacío (ya manejado en fetchNotasPorSeccion)
-                console.log('📝 No hay notas para esta sección, continuando con array vacío');
+               
                 todasLasNotas = [];
             }
             
@@ -307,7 +288,7 @@ export const useNotas = () => {
             // 7. Ordenar por nombre
             estudiantesConNotas.sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
 
-            console.log('✅ Estudiantes con notas procesados:', estudiantesConNotas);
+           
 
             return estudiantesConNotas;
         } catch (error) {

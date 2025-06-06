@@ -95,7 +95,6 @@ const ChangePasswordModal = ({ isOpen, onClose, onSuccess }) => {
 
 	const handleChange = (e) => {
 		const { name, value } = e.target;
-		console.log('Input change:', name, value); // Debug log
 		
 		setFormData(prev => ({
 			...prev,
@@ -153,7 +152,6 @@ const ChangePasswordModal = ({ isOpen, onClose, onSuccess }) => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-		console.log('Form submit with data:', formData); // Debug log
 		
 		if (!validateForm()) return;
 
@@ -161,8 +159,6 @@ const ChangePasswordModal = ({ isOpen, onClose, onSuccess }) => {
 			formData.contrasenaActual,
 			formData.contrasenaNueva
 		);
-
-		console.log('Password change result:', result); // Debug log
 	};
 
 	const handleClose = () => {

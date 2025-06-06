@@ -136,8 +136,6 @@ const EditarEvaluacionModal = ({
                 porcentaje: parseInt(formData.porcentaje)
             };
 
-            console.log('🔄 Actualizando evaluación:', evaluacionData);
-
             await updateEvaluacion(evaluacionData);
             
             // Obtener el nombre del tipo de evaluación para el mensaje

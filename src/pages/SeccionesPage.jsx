@@ -47,7 +47,7 @@ const SeccionesPage = () => {
         // Extraer todos los periodos únicos de todas las secciones
         const periodos = [...new Set(secciones.map(seccion => seccion.periodo).filter(Boolean))];
         
-        console.log("📅 Todos los periodos disponibles (administrador):", periodos);
+        
         return periodos.sort().reverse(); // Más recientes primero
     };
 
@@ -64,7 +64,7 @@ const SeccionesPage = () => {
         // Extraer periodos únicos
         const periodos = [...new Set(seccionesDelProfesor.map(seccion => seccion.periodo).filter(Boolean))];
         
-        console.log("📅 Periodos disponibles para profesor:", periodos);
+        
         return periodos.sort().reverse(); // Más recientes primero
     };
 
@@ -74,7 +74,7 @@ const SeccionesPage = () => {
             const userId = authUtils.getUserId();
             if (!userId) return [];
 
-            console.log("🔍 Obteniendo periodos disponibles para estudiante:", userId);
+        
 
             // Obtener todas las inscripciones del estudiante
             const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
@@ -94,7 +94,7 @@ const SeccionesPage = () => {
 
             // Extraer periodos únicos
             const periodos = [...new Set(secciones.map(seccion => seccion.periodo).filter(Boolean))];
-            console.log("📅 Periodos disponibles (estudiante):", periodos);
+        
 
             return periodos.sort().reverse(); // Más recientes primero
         } catch (error) {
@@ -106,7 +106,7 @@ const SeccionesPage = () => {
     // Cargar secciones al montar el componente y cuando cambie el userRole
     useEffect(() => {
         if (!roleLoading && (userRole === "Administrador" || userRole === "Profesor")) {
-            console.log('Fetching secciones for role:', userRole);
+    
             fetchSecciones().catch(err => {
                 console.error('Error fetching secciones:', err);
             });

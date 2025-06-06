@@ -6,11 +6,13 @@ import { useProfile } from "../hooks/useProfile";
 import ProfileHeader from "../components/perfil/ProfileHeader";
 import ProfileStats from "../components/perfil/ProfileStats";
 import ProfileActions from "../components/perfil/ProfileActions";
+import EditProfileModal from "../components/perfil/EditProfileModal";
 
 const PerfilPage = () => {
 	const location = useLocation();
 	const { user, loading, error, fetchProfile, updateProfile } = useProfile();
 	const [successMessage, setSuccessMessage] = useState("");
+	const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
 	// Verificar si viene mensaje de éxito desde cambio de contraseña
 	useEffect(() => {
@@ -28,9 +30,15 @@ const PerfilPage = () => {
 	}, [fetchProfile]);
 
 	const handleEditProfile = useCallback(() => {
-		// Aquí puedes abrir un modal de edición o navegar a otra página
-		alert('Modal de edición - Por implementar');
+		setIsEditModalOpen(true);
 	}, []);
+
+	const handleUpdateSuccess = useCallback((message) => {
+		setSuccessMessage(message);
+		fetchProfile();
+		setIsEditModalOpen(false);
+		setTimeout(() => setSuccessMessage(''), 5000);
+	}, [fetchProfile]);
 
 	const handleDownloadData = useCallback(() => {
 		setSuccessMessage('Datos descargados exitosamente');
@@ -126,6 +134,14 @@ const PerfilPage = () => {
 						</motion.div>
 					)}
 				</main>
+
+				<EditProfileModal
+					isOpen={isEditModalOpen}
+					onClose={() => setIsEditModalOpen(false)}
+					onSuccess={handleUpdateSuccess}
+					userToEdit={user}
+					updateUser={updateProfile}
+				/>
 			</div>
 		</div>
 	);

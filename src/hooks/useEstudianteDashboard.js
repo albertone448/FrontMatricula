@@ -64,19 +64,13 @@ export const useEstudianteDashboard = () => {
                 throw new Error("Usuario no autenticado");
             }
 
-            console.log("🔍 Obteniendo datos del estudiante:", userId);
-
             // Calcular periodo actual
             const periodoCalculado = calcularPeriodoActual();
             setPeriodoActual(periodoCalculado);
 
-            console.log("📅 Periodo actual calculado:", periodoCalculado);
-
             // 1. Obtener inscripciones del estudiante
             const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
             const inscripciones = inscripcionesResponse.data;
-
-            console.log("📚 Inscripciones obtenidas:", inscripciones);
 
             if (!inscripciones || inscripciones.length === 0) {
                 setSecciones([]);
@@ -93,14 +87,10 @@ export const useEstudianteDashboard = () => {
             const seccionesResponses = await Promise.all(seccionesPromises);
             const todasLasSecciones = seccionesResponses.map(response => response.data);
 
-            console.log("📖 Todas las secciones obtenidas:", todasLasSecciones);
-
             // 3. Filtrar secciones del periodo actual
             const seccionesDelPeriodo = todasLasSecciones.filter(seccion => 
                 seccion.periodo === periodoCalculado
             );
-
-            console.log("📅 Secciones del periodo actual:", seccionesDelPeriodo.length);
 
             setSeccionesCount(seccionesDelPeriodo.length);
 
@@ -115,15 +105,11 @@ export const useEstudianteDashboard = () => {
             const seccionesEnriquecidas = await Promise.all(
                 seccionesDelPeriodo.map(async (seccion) => {
                     try {
-                        console.log(`🔍 Procesando sección ${seccion.seccionId}`);
-
                         // Obtener información del curso
                         const cursoInfo = await fetchCursoInfo(seccion.cursoId);
                         
                         // Obtener información del horario
                         const horarioInfo = await fetchHorarioInfo(seccion.horarioId);
-
-                        console.log(`📊 Sección ${seccion.seccionId}: curso ${cursoInfo?.nombre}, ${cursoInfo?.creditos} créditos`);
 
                         return {
                             ...seccion,
@@ -151,12 +137,6 @@ export const useEstudianteDashboard = () => {
             const totalCreditos = seccionesEnriquecidas.reduce((total, seccion) => 
                 total + (seccion.creditos || 0), 0
             );
-
-            console.log("✅ Datos del estudiante procesados:", {
-                secciones: seccionesEnriquecidas.length,
-                totalCreditos: totalCreditos,
-                periodo: periodoCalculado
-            });
 
             setSecciones(seccionesEnriquecidas);
             setCreditosInscritos(totalCreditos);

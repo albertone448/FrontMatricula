@@ -88,45 +88,34 @@ const SeccionDetailPage = () => {
     // ✅ Verificar permisos para gestionar evaluaciones - ACTUALIZADO para incluir administradores
     const canManageEvaluaciones = () => {
         if (userRole === "Administrador") {
-            console.log('✅ Administrador tiene acceso completo a gestionar evaluaciones');
+           
             return true;
         }
         if (userRole === "Profesor" && seccion) {
             const userId = authUtils.getUserId();
             const hasAccess = seccion.usuarioId === userId;
-            console.log('🔍 Verificando acceso de profesor:', { 
-                userId, 
-                seccionUserId: seccion.usuarioId, 
-                hasAccess 
-            });
+            
             return hasAccess;
         }
-        console.log('❌ Sin permisos para gestionar evaluaciones:', { userRole });
+       
         return false;
     };
 
     // ✅ Verificar si puede ver la sección - ACTUALIZADO para incluir administradores
     const canViewSeccion = () => {
         if (userRole === "Administrador") {
-            console.log('✅ Administrador puede ver cualquier sección');
+           
             return true;
         }
         if (userRole === "Profesor" && seccion) {
             const userId = authUtils.getUserId();
             const hasAccess = seccion.usuarioId === userId;
-            console.log('🔍 Verificando acceso de profesor a sección:', { 
-                userId, 
-                seccionUserId: seccion.usuarioId, 
-                hasAccess 
-            });
             return hasAccess;
         }
         if (userRole === "Estudiante") {
             // Los estudiantes pueden ver secciones donde estén inscritos (implementar lógica si es necesario)
-            console.log('ℹ️ Estudiante puede ver secciones (implementar verificación de inscripción)');
             return true; // Por ahora permitimos, pero se puede restringir
         }
-        console.log('❌ Sin permisos para ver la sección:', { userRole });
         return false;
     };
 
@@ -135,11 +124,10 @@ const SeccionDetailPage = () => {
         try {
             if (!seccionId) return;
 
-            console.log(`🔍 Obteniendo estudiantes para sección ${seccionId}`);
+    
 
             // 1. Obtener inscripciones de la sección
             const inscripciones = await fetchInscripcionesPorSeccion(parseInt(seccionId));
-            console.log('📋 Inscripciones obtenidas:', inscripciones.length);
 
             if (!inscripciones || inscripciones.length === 0) {
                 setEstudiantes([]);
@@ -177,10 +165,10 @@ const SeccionDetailPage = () => {
             estudiantesData.sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto));
 
             setEstudiantes(estudiantesData);
-            console.log('✅ Estudiantes procesados:', estudiantesData.length);
+           
 
         } catch (error) {
-            console.error("❌ Error al obtener estudiantes:", error);
+           
             setEstudiantes([]);
             setInscritosCount(0);
         }
@@ -193,17 +181,13 @@ const SeccionDetailPage = () => {
                 setLoading(true);
                 setError("");
                 
-                console.log(`🔍 Cargando detalles de sección ${seccionId}`);
+               
                 
                 // Cargar datos de la sección
                 const seccionData = await getSeccionById(parseInt(seccionId));
                 setSeccion(seccionData);
                 
-                console.log('📄 Datos de sección cargados:', {
-                    seccionId: seccionData.seccionId,
-                    profesorId: seccionData.usuarioId,
-                    profesorNombre: seccionData.profesorNombre
-                });
+
                 
                 // Cargar evaluaciones
                 await fetchEvaluaciones(parseInt(seccionId));
@@ -211,7 +195,7 @@ const SeccionDetailPage = () => {
                 // Cargar estudiantes
                 await fetchEstudiantes();
                 
-                console.log('✅ Todos los datos cargados exitosamente');
+                
                 
             } catch (error) {
                 console.error("❌ Error al cargar detalles de la sección:", error);
@@ -241,7 +225,7 @@ const SeccionDetailPage = () => {
         if (seccionId) {
             try {
                 setLoading(true);
-                console.log('🔄 Refrescando datos...');
+               
                 
                 // Refrescar datos de la sección
                 const seccionData = await getSeccionById(parseInt(seccionId));
@@ -253,7 +237,7 @@ const SeccionDetailPage = () => {
                 // Refrescar estudiantes
                 await fetchEstudiantes();
                 
-                console.log('✅ Datos refrescados exitosamente');
+               
                 
             } catch (error) {
                 console.error("❌ Error al actualizar los datos:", error);
@@ -285,19 +269,12 @@ const SeccionDetailPage = () => {
 
     // Función mejorada para manejar Ver Notas Completas
     const handleVerNotasCompletas = async () => {
-        console.log('🔍 Abriendo modal de notas completas');
-        console.log('📊 Datos disponibles:', {
-            seccionId: seccionId,
-            evaluaciones: evaluaciones.length,
-            estudiantes: estudiantes.length
-        });
         
         // Si no hay estudiantes cargados, intentar cargarlos antes de abrir el modal
         if (estudiantes.length === 0) {
-            console.log('⚠️ No hay estudiantes cargados, intentando cargar...');
             await fetchEstudiantes();
         }
-        
+
         setIsNotasCompletasModalOpen(true);
     };
 

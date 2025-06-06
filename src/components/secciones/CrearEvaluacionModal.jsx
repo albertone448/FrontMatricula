@@ -123,8 +123,6 @@ const CrearEvaluacionModal = ({
                 porcentaje: parseInt(formData.porcentaje)
             };
 
-            console.log('📝 Creando evaluación:', evaluacionData);
-
             await createEvaluacion(evaluacionData);
             
             // Obtener el nombre del tipo de evaluación para el mensaje

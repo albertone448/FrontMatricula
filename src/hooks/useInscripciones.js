@@ -75,19 +75,19 @@ export const useInscripciones = () => {
             if (profesorUserIds.length > 0) {
                 const profesoresPromises = profesorUserIds.map(id =>
                     api.get(`Usuario/GetUsuarioPorId/${id}`).catch(err => {
-                        // console.warn(`Failed to load professor (user) with ID ${id}:`, err); // Removed log
+                        
                         return null; 
                     })
                 );
                 const profesoresResponses = await Promise.all(profesoresPromises);
-                // console.log("ℹ️ Raw profesoresResponses:", profesoresResponses); // Removed log
+                
 
                 profesoresResponses.forEach(response => {
                     if (response && response.data) { 
                         profesoresMap[response.data.usuarioId] = response.data;
                     }
                 });
-                // console.log("ℹ️ Populated profesoresMap:", profesoresMap); // Removed log
+                
             }
 
             // Adicional: Obtener notas para las inscripciones actuales del estudiante
@@ -97,9 +97,6 @@ export const useInscripciones = () => {
                     if (insc.inscripcionId) {
                         return api.get(`Nota/GetNotasPorInscripcion/${insc.inscripcionId}`)
                             .then(response => {
-                                // if (idx < 3) { // Removed log
-                                //     console.log(`ℹ️ Notas response for inscripcionId ${insc.inscripcionId}:`, response.data);
-                                // }
                                 return { 
                                     inscripcionId: insc.inscripcionId, 
                                     tieneNotas: Array.isArray(response.data) && response.data.length > 0 
@@ -118,7 +115,7 @@ export const useInscripciones = () => {
                         notasMap[result.inscripcionId] = result.tieneNotas;
                     }
                 });
-                // console.log("ℹ️ Populated notasMap:", notasMap); // Removed log
+               
             }
 
             // 6. Obtener el número de inscritos para cada sección
@@ -302,7 +299,6 @@ export const useInscripciones = () => {
             });
 
             setSuccessMessage(`Has retirado exitosamente ${inscripcionParaRetiro.curso.nombre}`);
-            // console.log("✅ Inscripción retirada exitosamente."); // Removed log
             
             // Recargar las secciones para actualizar el estado
             await fetchSeccionesDisponibles(periodoSeleccionado);

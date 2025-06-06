@@ -6,7 +6,7 @@ const TokenValidator = ({ children }) => {
     const intervalRef = useRef(null);
 
     useEffect(() => {
-        console.log('🚀 TokenValidator iniciado');
+        
 
         // Función para ejecutar validación
         const executeValidation = async () => {
@@ -14,7 +14,7 @@ const TokenValidator = ({ children }) => {
                 await validateToken();
             } catch (error) {
                 // El error ya se maneja en el hook, aquí solo registramos
-                console.log('⚠️ Validación falló, usuario será redirigido');
+          
             }
         };
 
@@ -23,14 +23,14 @@ const TokenValidator = ({ children }) => {
 
         // Configurar validación periódica cada 5 minutos
         intervalRef.current = setInterval(() => {
-            console.log('⏰ Ejecutando validación periódica de token...');
+          
             executeValidation();
         }, 5 * 60 * 1000); // 5 minutos
 
         // Cleanup: limpiar interval al desmontar
         return () => {
             if (intervalRef.current) {
-                console.log('🧹 Limpiando validación periódica de token');
+          
                 clearInterval(intervalRef.current);
                 intervalRef.current = null;
             }

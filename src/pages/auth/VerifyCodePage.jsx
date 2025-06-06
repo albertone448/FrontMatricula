@@ -60,32 +60,22 @@ const VerifyCodePage = () => {
 				headers["Authorization"] = `Bearer ${token}`;
 			}
 
-			console.log('🔍 Buscando usuario por email:', email);
-
 			// Buscar usuario por email para obtener el ID
 			const response = await fetch("http://localhost:5276/api/Usuario/GetTodosLosUsuarios", {
 				method: "GET",
 				headers: headers,
 			});
 
-			console.log('📡 Respuesta GetTodosLosUsuarios:', {
-				status: response.status,
-				ok: response.ok
-			});
-
 			// Verificar si es error de autenticación (401)
 			if (response.status === 401) {
 				// En este caso no es crítico porque es verificación de cuenta
 				// Pero podríamos limpiar localStorage por si hay datos corruptos
-				console.log('⚠️ Token inválido o expirado al buscar usuarios, continuando sin autenticación');
 				authUtils.logout();
 			}
 
 			if (response.ok) {
 				const users = await response.json();
 				const user = users.find(u => u.correo.toLowerCase() === email.toLowerCase());
-				
-				console.log('👤 Usuario encontrado:', user ? 'Sí' : 'No');
 				
 				if (user) {
 					if (user.activo) {
@@ -137,8 +127,6 @@ const VerifyCodePage = () => {
 		}
 
 		try {
-			console.log('🔐 Verificando código para usuario:', currentUserId);
-
 			// Este endpoint NO requiere token de autorización
 			const response = await fetch("http://localhost:5276/api/Usuario/VerificarUsuario", {
 				method: "POST",
@@ -152,21 +140,13 @@ const VerifyCodePage = () => {
 				}),
 			});
 
-			console.log('📡 Respuesta VerificarUsuario:', {
-				status: response.status,
-				ok: response.ok
-			});
-
 			const data = await response.json();
-			console.log('📄 Datos de respuesta:', data);
 
 			if (response.ok && data.estado === 1) {
 				setSuccess(true);
 				// Limpiar datos temporales
 				localStorage.removeItem("pendingUserId");
 				localStorage.removeItem("userEmail");
-				
-				console.log('✅ Verificación exitosa, redirigiendo al login...');
 				
 				// Esperar un momento para mostrar el mensaje de éxito y redirigir
 				setTimeout(() => {
@@ -192,8 +172,6 @@ const VerifyCodePage = () => {
 		setError("");
 
 		try {
-			console.log('🔄 Reenviando código de verificación...');
-
 			const currentUserId = userId || localStorage.getItem("pendingUserId");
 			if (!currentUserId) {
 				setError("No se encontró información del usuario para reenviar el código.");
@@ -209,7 +187,6 @@ const VerifyCodePage = () => {
 			await new Promise(resolve => setTimeout(resolve, 1500));
 			
 			// Simular respuesta exitosa
-			console.log('✅ Código reenviado (simulado)');
 			setError(""); // Limpiar errores
 			
 			// Mostrar mensaje de éxito temporal

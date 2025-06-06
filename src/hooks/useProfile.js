@@ -57,7 +57,6 @@ export const useProfile = () => {
 			// Manejar respuesta basada en el status code
 			let updatedUser = null;
 			if (response.status === 204) {
-				console.log('Perfil actualizado exitosamente (204 No Content)');
 				updatedUser = { ...user, ...updatedData };
 			} else {
 				updatedUser = response.data;

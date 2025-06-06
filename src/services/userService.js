@@ -66,7 +66,6 @@ export const userService = {
 			
 			// Manejar respuesta basada en el status code
 			if (response.status === 200) {
-				console.log('Usuario actualizado exitosamente (200 OK)');
 				return { success: true, data: userData };
 			}
 			
@@ -104,7 +103,6 @@ export const userService = {
 			
 			// Manejar respuesta basada en el status code
 			if (response.status === 204) {
-				console.log('Usuario eliminado exitosamente (204 No Content)');
 				return { success: true };
 			}
 			
@@ -144,7 +142,6 @@ export const userService = {
 			
 			// Manejar respuesta basada en el status code
 			if (response.status === 204) {
-				console.log('Estado del usuario actualizado exitosamente (204 No Content)');
 				return { success: true, activo: isActive };
 			}
 			

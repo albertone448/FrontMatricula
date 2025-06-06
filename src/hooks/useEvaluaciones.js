@@ -74,11 +74,11 @@ export const useEvaluaciones = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log(`🔍 Obteniendo evaluaciones para sección ${seccionId}`);
+            
 
             const response = await api.get(`Evaluacion/ObtenerEvaluacionesPorSeccion/${seccionId}`);
             
-            console.log('✅ Evaluaciones obtenidas:', response.data);
+            
 
             // Enriquecer las evaluaciones con información del tipo
             const evaluacionesEnriquecidas = response.data.map(evaluacion => ({
@@ -110,11 +110,9 @@ export const useEvaluaciones = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log('📝 Creando evaluación:', evaluacionData);
+            
 
             const response = await api.post("Evaluacion/AddEvaluacion", evaluacionData);
-            
-            console.log('✅ Evaluación creada exitosamente:', response.data);
 
             // Refrescar las evaluaciones después de crear una nueva
             await fetchEvaluaciones(evaluacionData.seccionId);
@@ -141,15 +139,11 @@ export const useEvaluaciones = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log('🔄 Actualizando evaluación:', evaluacionData);
-
             const response = await api.put("Evaluacion/UpdateEvaluacion", evaluacionData);
-            
-            console.log('✅ Evaluación actualizada exitosamente:', response.data);
 
             // Actualizar la evaluación en el estado local
-            setEvaluaciones(prev => prev.map(evaluacion => 
-                evaluacion.evaluacionId === evaluacionData.evaluacionId 
+            setEvaluaciones(prev => prev.map(evaluacion =>
+                evaluacion.evaluacionId === evaluacionData.evaluacionId
                     ? {
                         ...evaluacion,
                         tipEvaluacionId: evaluacionData.tipEvaluacionId,
@@ -182,13 +176,11 @@ export const useEvaluaciones = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log('🗑️ Eliminando evaluación:', evaluacionId);
+            
 
             const response = await api.delete("Evaluacion/DeleteEvaluacion", {
                 data: { evaluacionId: evaluacionId }
             });
-            
-            console.log('✅ Evaluación eliminada exitosamente:', response.data);
 
             // Remover la evaluación del estado local
             setEvaluaciones(prev => prev.filter(evaluacion => evaluacion.evaluacionId !== evaluacionId));

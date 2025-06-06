@@ -25,7 +25,7 @@ export const usePasswordChange = () => {
 				throw new Error('Token de autenticación no encontrado');
 			}
 
-			console.log('Enviando cambio de contraseña para usuario:', usuarioId);
+			
 
 			const response = await api.post('Usuario/CambiarContrasena', {
 				usuarioId: usuarioId,
@@ -33,7 +33,7 @@ export const usePasswordChange = () => {
 				contrasenaNueva: contrasenaNueva
 			});
 
-			console.log('Respuesta del servidor:', response.data);
+			
 
 			// Verificar si la respuesta es exitosa (response.data.estado === 1)
 			if (response.data && response.data.estado === 1) {

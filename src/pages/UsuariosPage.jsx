@@ -57,7 +57,7 @@ const UsuariosPage = () => {
 	};
 
 	const handleEditUser = (user) => {
-		console.log("Editando usuario:", user);
+		
 		setUserToEdit(user);
 		setIsEditModalOpen(true);
 	};

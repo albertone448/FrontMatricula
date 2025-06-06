@@ -28,8 +28,6 @@ const HorariosPage = () => {
 			const userId = authUtils.getUserId();
 			if (!userId) return [];
 
-			console.log("🔍 Obteniendo periodos disponibles para estudiante:", userId);
-
 			// Obtener todas las inscripciones del estudiante
 			const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
 			const inscripciones = inscripcionesResponse.data;
@@ -48,7 +46,6 @@ const HorariosPage = () => {
 
 			// Extraer periodos únicos
 			const periodos = [...new Set(secciones.map(seccion => seccion.periodo).filter(Boolean))];
-			console.log("📅 Periodos disponibles (estudiante):", periodos);
 
 			return periodos.sort().reverse(); // Más recientes primero
 		} catch (error) {
@@ -64,8 +61,6 @@ const HorariosPage = () => {
 			setLoading(true);
 			setError("");
 
-			console.log("🔍 Cargando todos los datos para administrador...");
-
 			// Cargar horarios, secciones y cursos en paralelo
 			const [horariosResponse, seccionesResponse, cursosResponse] = await Promise.all([
 				api.get("Horario/GetAllHorarios"),
@@ -76,12 +71,6 @@ const HorariosPage = () => {
 			setTodosLosHorarios(horariosResponse.data);
 			setTodasLasSecciones(seccionesResponse.data);
 			setTodosLosCursos(cursosResponse.data);
-
-			console.log("✅ Datos de administrador cargados:", {
-				horarios: horariosResponse.data.length,
-				secciones: seccionesResponse.data.length,
-				cursos: cursosResponse.data.length
-			});
 
 		} catch (error) {
 			console.error("❌ Error cargando datos de administrador:", error);
@@ -99,8 +88,6 @@ const HorariosPage = () => {
 			const userId = authUtils.getUserId();
 			if (!userId) return [];
 
-			console.log("🔍 Obteniendo periodos disponibles para profesor:", userId);
-
 			// Obtener todas las secciones
 			const seccionesResponse = await api.get("Seccion/GetAllSecciones");
 			const todasLasSecciones = seccionesResponse.data;
@@ -114,7 +101,6 @@ const HorariosPage = () => {
 
 			// Extraer periodos únicos
 			const periodos = [...new Set(seccionesDelProfesor.map(seccion => seccion.periodo).filter(Boolean))];
-			console.log("📅 Periodos disponibles (profesor):", periodos);
 
 			return periodos.sort().reverse(); // Más recientes primero
 		} catch (error) {
@@ -134,13 +120,9 @@ const HorariosPage = () => {
 				throw new Error("No se encontró el ID del usuario");
 			}
 
-			console.log("🔍 Obteniendo horario para estudiante:", userId, "periodo:", periodo);
-
 			// 1. Obtener inscripciones del estudiante
 			const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
 			const inscripciones = inscripcionesResponse.data;
-			
-			console.log("📝 Inscripciones obtenidas:", inscripciones);
 
 			if (!inscripciones || inscripciones.length === 0) {
 				setHorarioData({ 
@@ -163,9 +145,6 @@ const HorariosPage = () => {
 			// 3. Filtrar por periodo si se especifica
 			if (periodo) {
 				secciones = secciones.filter(seccion => seccion.periodo === periodo);
-				console.log(`📚 Secciones filtradas por periodo ${periodo}:`, secciones);
-			} else {
-				console.log("📚 Todas las secciones obtenidas:", secciones);
 			}
 
 			if (secciones.length === 0) {
@@ -181,27 +160,20 @@ const HorariosPage = () => {
 			// 4. Obtener todos los horarios
 			const horariosResponse = await api.get("Horario/GetAllHorarios");
 			const todosLosHorarios = horariosResponse.data;
-			
-			console.log("⏰ Horarios obtenidos:", todosLosHorarios);
 
 			// 5. Obtener información detallada de cada curso por separado
-			console.log("📖 Obteniendo información de cursos...");
 			const cursosPromises = secciones.map(seccion => 
 				api.get(`Curso/GetCursoById/${seccion.cursoId}`)
 			);
 			
 			const cursosResponses = await Promise.all(cursosPromises);
 			const cursos = cursosResponses.map(response => response.data);
-			
-			console.log("📖 Cursos obtenidos individualmente:", cursos);
 
 			// 6. Procesar y organizar los datos con información completa
 			const horariosProcesados = secciones.map((seccion, index) => {
 				const horario = todosLosHorarios.find(h => h.horarioId === seccion.horarioId);
 				const curso = cursos[index];
 				const inscripcion = inscripciones.find(i => i.seccionId === seccion.seccionId);
-				
-				console.log(`🔍 Sección ${seccion.seccionId} - Curso:`, curso);
 				
 				return {
 					...seccion,
@@ -210,8 +182,6 @@ const HorariosPage = () => {
 					inscripcionId: inscripcion.inscripcionId
 				};
 			}).filter(item => item.horario && item.curso);
-
-			console.log("✅ Horarios procesados con cursos (estudiante):", horariosProcesados);
 
 			setHorarioData({
 				secciones: horariosProcesados,
@@ -239,18 +209,12 @@ const HorariosPage = () => {
 				throw new Error("No se encontró el ID del usuario");
 			}
 
-			console.log("🔍 Obteniendo horario para profesor:", userId, "periodo:", periodo);
-
 			// 1. Obtener todas las secciones
 			const seccionesResponse = await api.get("Seccion/GetAllSecciones");
 			const todasLasSecciones = seccionesResponse.data;
-			
-			console.log("📝 Todas las secciones obtenidas:", todasLasSecciones);
 
 			// 2. Filtrar las secciones del profesor
 			let seccionesDelProfesor = todasLasSecciones.filter(seccion => seccion.usuarioId === userId);
-			
-			console.log("👨‍🏫 Secciones del profesor:", seccionesDelProfesor);
 
 			if (!seccionesDelProfesor || seccionesDelProfesor.length === 0) {
 				setHorarioData({ 
@@ -265,7 +229,6 @@ const HorariosPage = () => {
 			// 3. Filtrar por periodo si se especifica
 			if (periodo) {
 				seccionesDelProfesor = seccionesDelProfesor.filter(seccion => seccion.periodo === periodo);
-				console.log(`📚 Secciones filtradas por periodo ${periodo}:`, seccionesDelProfesor);
 			}
 
 			if (seccionesDelProfesor.length === 0) {
@@ -281,26 +244,19 @@ const HorariosPage = () => {
 			// 4. Obtener todos los horarios
 			const horariosResponse = await api.get("Horario/GetAllHorarios");
 			const todosLosHorarios = horariosResponse.data;
-			
-			console.log("⏰ Horarios obtenidos:", todosLosHorarios);
 
 			// 5. Obtener información detallada de cada curso por separado
-			console.log("📖 Obteniendo información de cursos...");
 			const cursosPromises = seccionesDelProfesor.map(seccion => 
 				api.get(`Curso/GetCursoById/${seccion.cursoId}`)
 			);
 			
 			const cursosResponses = await Promise.all(cursosPromises);
 			const cursos = cursosResponses.map(response => response.data);
-			
-			console.log("📖 Cursos obtenidos individualmente:", cursos);
 
 			// 6. Procesar y organizar los datos con información completa
 			const horariosProcesados = seccionesDelProfesor.map((seccion, index) => {
 				const horario = todosLosHorarios.find(h => h.horarioId === seccion.horarioId);
 				const curso = cursos[index];
-				
-				console.log(`🔍 Sección ${seccion.seccionId} - Curso:`, curso);
 				
 				return {
 					...seccion,
@@ -308,8 +264,6 @@ const HorariosPage = () => {
 					curso
 				};
 			}).filter(item => item.horario && item.curso);
-
-			console.log("✅ Horarios procesados con cursos para profesor:", horariosProcesados);
 
 			setHorarioData({
 				secciones: horariosProcesados,
