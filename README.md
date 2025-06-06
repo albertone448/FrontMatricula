@@ -3,7 +3,6 @@
 ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![Recharts](https://img.shields.io/badge/Recharts-8884d8?style=for-the-badge&logo=recharts&logoColor=white)
 ![Framer Motion](https://img.shields.io/badge/Framer_Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)
 
 Interfaz de usuario para un sistema de gestión de matrículas universitarias, permitiendo a estudiantes, profesores y administradores interactuar con la plataforma.
@@ -29,7 +28,6 @@ Interfaz de usuario para un sistema de gestión de matrículas universitarias, p
 -   **Vite (v5.3.4):** Herramienta de desarrollo frontend para un inicio rápido y HMR (Hot Module Replacement).
 -   **Tailwind CSS (v3.4.7):** Framework CSS para un diseño rápido y personalizable.
 -   **React Router DOM (v6.25.1):** Para la gestión de rutas en la aplicación.
--   **Recharts (v2.12.7):** Para la creación de gráficos y visualizaciones de datos.
 -   **Framer Motion (v11.3.19):** Para animaciones fluidas y atractivas.
 -   **Lucide React (v0.417.0):** Colección de iconos SVG.
 -   **Axios (v1.9.0):** Cliente HTTP para realizar peticiones a la API.
