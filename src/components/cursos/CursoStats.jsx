@@ -24,8 +24,7 @@ const CursoStats = ({ cursos = [], loading }) => {
 		new Set(secciones.filter(s => s?.cursoId).map(s => s.cursoId)).size : 
 		0;
 
-	console.log('Secciones:', secciones); // Debug
-	console.log('Cursos activos:', cursosActivos); // Debug
+
 
 	const stats = [
 		{

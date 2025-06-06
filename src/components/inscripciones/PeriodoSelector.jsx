@@ -40,18 +40,13 @@ export const PeriodoSelector = ({
         if (periodosDisponibles.length > 0 && !periodoSeleccionado) {
             const periodoActual = calcularPeriodoActual();
             
-            console.log('📅 Periodo actual calculado:', periodoActual);
-            console.log('📅 Periodos disponibles:', periodosDisponibles);
-            
             // Verificar si el periodo actual existe en los periodos disponibles
             const periodoEncontrado = periodosDisponibles.find(p => p === periodoActual);
             
             if (periodoEncontrado) {
-                console.log('✅ Periodo actual encontrado, seleccionando:', periodoEncontrado);
                 onPeriodoChange(periodoEncontrado);
             } else {
                 // Si el periodo actual no existe, seleccionar el más reciente (primero en la lista)
-                console.log('⚠️ Periodo actual no encontrado, seleccionando el más reciente:', periodosDisponibles[0]);
                 onPeriodoChange(periodosDisponibles[0]);
             }
         }

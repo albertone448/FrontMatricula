@@ -71,7 +71,7 @@ export const useSecciones = () => {
             }
             
             const response = await api.get("Seccion/GetAllSecciones");
-            console.log("API response:", response);
+           
 
             let seccionesData = [];
             

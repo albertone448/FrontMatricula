@@ -86,7 +86,6 @@ export function useCursos() {
 			// Manejar respuesta basada en el status code
 			let updatedCurso = null;
 			if (response.status === 204) {
-				console.log('Curso actualizado exitosamente (204 No Content)');
 				updatedCurso = cursoData;
 			} else {
 				updatedCurso = response.data;

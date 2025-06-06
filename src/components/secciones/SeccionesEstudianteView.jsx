@@ -214,7 +214,7 @@ const SeccionesEstudianteView = ({
                 throw new Error("No se encontró el ID del usuario");
             }
 
-            console.log(`🔍 Obteniendo secciones del estudiante ${userId} para periodo:`, periodo);
+            
 
             // 1. Obtener inscripciones del estudiante
             const inscripcionesResponse = await api.get(`Inscripcion/GetInscripcionesPorUsuario?id=${userId}`);
@@ -282,7 +282,7 @@ const SeccionesEstudianteView = ({
                         } catch (notasError) {
                             // ✅ Si es 404, significa que no hay notas, no es un error
                             if (notasError.response?.status === 404) {
-                                console.log(`📝 No hay notas para sección ${seccion.seccionId} (404), continuando con array vacío`);
+                                
                                 notas = [];
                             } else {
                                 // Si es otro error, re-lanzarlo
@@ -315,7 +315,7 @@ const SeccionesEstudianteView = ({
             seccionesConDatos.sort((a, b) => (a.codigoCurso || '').localeCompare(b.codigoCurso || ''));
 
             setSecciones(seccionesConDatos);
-            console.log('✅ Secciones del estudiante procesadas:', seccionesConDatos.length);
+            
 
         } catch (error) {
             console.error("❌ Error obteniendo secciones del estudiante:", error);

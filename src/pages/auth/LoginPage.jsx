@@ -91,18 +91,6 @@ const LoginPage = () => {
 				localStorage.removeItem("pendingUserId");
 				localStorage.removeItem("userEmail");
 				
-				console.log("Login exitoso - Datos guardados:", {
-					usuarioId: data.usuario.usuarioId,
-					nombre: data.usuario.nombre,
-					token: data.token ? "Token guardado correctamente" : "Error: No se recibió token",
-					tokenExpiration: data.tokenExpiration,
-					datosGuardados: {
-						usuario: userData,
-						token: localStorage.getItem("token") ? "✓ Guardado" : "✗ Error",
-						tokenExpiration: localStorage.getItem("tokenExpiration") ? "✓ Guardado" : "✗ Error"
-					}
-				});
-				
 				// Esperar 2 segundos antes de redirigir
 				setTimeout(() => {
 					navigate("/");

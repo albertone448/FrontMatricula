@@ -39,12 +39,10 @@ export const useAdminDashboard = () => {
                 throw new Error("Token de autenticación no encontrado");
             }
 
-            console.log("🔍 Obteniendo estadísticas de administrador...");
 
             // Calcular periodo actual
             const periodoCalculado = calcularPeriodoActual();
             setPeriodoActual(periodoCalculado);
-            console.log("📅 Periodo actual calculado:", periodoCalculado);
 
             // Realizar todas las peticiones en paralelo para mejor rendimiento
             const [usuariosResponse, seccionesResponse] = await Promise.all([
@@ -52,16 +50,10 @@ export const useAdminDashboard = () => {
                 api.get("Seccion/GetAllSecciones")
             ]);
 
-            console.log("👥 Usuarios obtenidos:", usuariosResponse.data.length);
-            console.log("📚 Secciones obtenidas:", seccionesResponse.data.length);
-
             // Procesar usuarios
             const todosLosUsuarios = usuariosResponse.data;
             const estudiantes = todosLosUsuarios.filter(usuario => usuario.rol === "Estudiante");
             const profesores = todosLosUsuarios.filter(usuario => usuario.rol === "Profesor");
-
-            console.log("🎓 Estudiantes encontrados:", estudiantes.length);
-            console.log("👨‍🏫 Profesores encontrados:", profesores.length);
 
             // Procesar secciones del periodo actual
             const todasLasSecciones = seccionesResponse.data;
@@ -69,19 +61,10 @@ export const useAdminDashboard = () => {
                 seccion => seccion.periodo === periodoCalculado
             );
 
-            console.log("📖 Secciones del periodo actual:", seccionesDelPeriodoActual.length);
-
             // Actualizar estados
             setTotalEstudiantes(estudiantes.length);
             setTotalProfesores(profesores.length);
             setSeccionesActivas(seccionesDelPeriodoActual.length);
-
-            console.log("✅ Estadísticas de administrador cargadas:", {
-                estudiantes: estudiantes.length,
-                profesores: profesores.length,
-                seccionesActivas: seccionesDelPeriodoActual.length,
-                periodo: periodoCalculado
-            });
 
         } catch (error) {
             console.error("❌ Error al cargar estadísticas de administrador:", error);

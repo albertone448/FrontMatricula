@@ -75,19 +75,19 @@ export const useInscripciones = () => {
             if (profesorUserIds.length > 0) {
                 const profesoresPromises = profesorUserIds.map(id =>
                     api.get(`Usuario/GetUsuarioPorId/${id}`).catch(err => {
-                        // console.warn(`Failed to load professor (user) with ID ${id}:`, err); // Removed log
+                        
                         return null; 
                     })
                 );
                 const profesoresResponses = await Promise.all(profesoresPromises);
-                // console.log("ℹ️ Raw profesoresResponses:", profesoresResponses); // Removed log
+                
 
                 profesoresResponses.forEach(response => {
                     if (response && response.data) { 
                         profesoresMap[response.data.usuarioId] = response.data;
                     }
                 });
-                // console.log("ℹ️ Populated profesoresMap:", profesoresMap); // Removed log
+                
             }
 
             // Adicional: Obtener notas para las inscripciones actuales del estudiante
@@ -97,9 +97,6 @@ export const useInscripciones = () => {
                     if (insc.inscripcionId) {
                         return api.get(`Nota/GetNotasPorInscripcion/${insc.inscripcionId}`)
                             .then(response => {
-                                // if (idx < 3) { // Removed log
-                                //     console.log(`ℹ️ Notas response for inscripcionId ${insc.inscripcionId}:`, response.data);
-                                // }
                                 return { 
                                     inscripcionId: insc.inscripcionId, 
                                     tieneNotas: Array.isArray(response.data) && response.data.length > 0 
@@ -118,7 +115,7 @@ export const useInscripciones = () => {
                         notasMap[result.inscripcionId] = result.tieneNotas;
                     }
                 });
-                // console.log("ℹ️ Populated notasMap:", notasMap); // Removed log
+               
             }
 
             // 6. Obtener el número de inscritos para cada sección
@@ -182,15 +179,42 @@ export const useInscripciones = () => {
             return false;
         }
 
-        // Verificar si ya tiene un curso en el mismo horario
-        const horarioConflicto = seccionesDisponibles.find(s => 
-            s.inscrito && 
-            s.horario?.dia === seccion.horario?.dia &&
-            s.horario?.horaInicio === seccion.horario?.horaInicio
-        );
+        // Helper function to convert HH:MM string to minutes since midnight
+        const timeToMinutes = (timeStr) => {
+            if (!timeStr || !timeStr.includes(':')) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        };
+
+        const nuevaHoraInicio = timeToMinutes(seccion.horario?.horaInicio);
+        const nuevaHoraFin = timeToMinutes(seccion.horario?.horaFin);
+        const nuevoDia = seccion.horario?.dia;
+
+        // Verificar si ya tiene un curso en el mismo horario (con solapamiento)
+        const horarioConflicto = seccionesDisponibles.find(s => {
+            if (!s.inscrito || !s.horario || s.horario.dia !== nuevoDia) {
+                return false;
+            }
+            const existenteHoraInicio = timeToMinutes(s.horario.horaInicio);
+            const existenteHoraFin = timeToMinutes(s.horario.horaFin);
+
+            // Verificar solapamiento: (StartA < EndB) and (EndA > StartB)
+            return nuevaHoraInicio < existenteHoraFin && nuevaHoraFin > existenteHoraInicio;
+        });
 
         if (horarioConflicto) {
-            setError(`Conflicto de horario con ${horarioConflicto.curso.nombre}`);
+            setError(`Conflicto de horario con ${horarioConflicto.curso.nombre} (${horarioConflicto.horario.dia} ${horarioConflicto.horario.horaInicio.slice(0,5)}-${horarioConflicto.horario.horaFin.slice(0,5)}).`);
+            return false;
+        }
+
+        // Verificar si ya está inscrito en otra sección del mismo curso (por código)
+        const cursoYaInscrito = seccionesDisponibles.find(s =>
+            s.inscrito &&
+            s.curso?.codigo === seccion.curso?.codigo
+        );
+
+        if (cursoYaInscrito) {
+            setError(`Ya estás inscrito en ${cursoYaInscrito.curso.nombre} (Código: ${cursoYaInscrito.curso.codigo}). No puedes inscribir dos veces el mismo curso.`);
             return false;
         }
 
@@ -302,7 +326,6 @@ export const useInscripciones = () => {
             });
 
             setSuccessMessage(`Has retirado exitosamente ${inscripcionParaRetiro.curso.nombre}`);
-            // console.log("✅ Inscripción retirada exitosamente."); // Removed log
             
             // Recargar las secciones para actualizar el estado
             await fetchSeccionesDisponibles(periodoSeleccionado);

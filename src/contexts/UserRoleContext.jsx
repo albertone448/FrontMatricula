@@ -22,11 +22,6 @@ export const UserRoleProvider = ({ children }) => {
 			const userId = authUtils.getUserId();
 			const token = authUtils.getToken();
 			
-			console.log('🔍 Verificando datos de autenticación:', {
-				userId: userId,
-				hasToken: !!token,
-				tokenPreview: token ? `${token.substring(0, 20)}...` : 'No token'
-			});
 			
 			if (!userId) {
 				console.error('❌ No se encontró userId en localStorage');
@@ -46,22 +41,11 @@ export const UserRoleProvider = ({ children }) => {
 				return;
 			}
 
-			console.log(`🚀 Haciendo petición a: Usuario/GetUsuarioPorId/${userId}`);
 
 			const response = await api.get(`Usuario/GetUsuarioPorId/${userId}`);
 
-			console.log('📡 Respuesta del servidor:', {
-				data: response.data,
-				status: response.status
-			});
 
 			const userData = response.data;
-			console.log('✅ Datos del usuario obtenidos:', {
-				usuarioId: userData.usuarioId,
-				nombre: userData.nombre,
-				rol: userData.rol,
-				correo: userData.correo
-			});
 			
 			// Actualizar el estado
 			setCurrentUser(userData);
@@ -70,8 +54,6 @@ export const UserRoleProvider = ({ children }) => {
 			// Calcular permisos basados en el rol
 			const permissions = calculatePermissions(userData.rol);
 			setUserPermissions(permissions);
-
-			console.log('✅ Permisos calculados para rol', userData.rol, ':', permissions);
 
 			// Actualizar localStorage con solo los datos necesarios
 			const limitedUserData = {
@@ -175,30 +157,18 @@ export const UserRoleProvider = ({ children }) => {
 
 	// Efecto para cargar el rol al montar el componente
 	useEffect(() => {
-		console.log('🎯 UserRoleContext useEffect ejecutándose');
-		
 		// Verificar estado de autenticación
 		const isAuthenticated = authUtils.isAuthenticated();
 		const isSessionValid = authUtils.isSessionValid();
 		const userId = authUtils.getUserId();
 		const token = authUtils.getToken();
 		
-		console.log('🔐 Estado de autenticación:', {
-			isAuthenticated,
-			isSessionValid,
-			userId,
-			hasToken: !!token
-		});
-
 		// Si tenemos userId y token, intentar cargar independientemente de isSessionValid
 		if (userId && token) {
-			console.log('✅ Tenemos userId y token, cargando datos del usuario...');
 			fetchUserRole();
 		} else if (userId) {
-			console.log('⚠️ Tenemos userId pero no token, intentando de todas formas...');
 			fetchUserRole();
 		} else {
-			console.log('❌ No hay userId, no se cargarán datos');
 			setLoading(false);
 		}
 	}, []);

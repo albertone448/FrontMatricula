@@ -82,7 +82,7 @@ useEffect(() => {    if (cursoToEdit) {
 				creditos: parseInt(formData.creditos)
 			};
 			
-			console.log('Datos a enviar:', dataToSend);
+			
 			
 			if (cursoToEdit) {
 				await updateCurso(dataToSend);

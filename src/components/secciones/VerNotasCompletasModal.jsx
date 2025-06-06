@@ -157,13 +157,13 @@ const VerNotasCompletasModal = ({
             setLoading(true);
             setError("");
 
-            console.log(`🔍 Obteniendo todas las notas para sección ${seccionId}`);
+           
 
             // ✅ Si estudiantes es empty array, obtenerlos desde la API
             let estudiantesParaUsar = estudiantes;
             
             if (!estudiantes || estudiantes.length === 0) {
-                console.log('⚠️ No hay estudiantes en props, obteniendo desde API...');
+           
                 
                 try {
                     // Obtener inscripciones

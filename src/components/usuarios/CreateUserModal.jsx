@@ -264,16 +264,7 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }) => {
 				delete dataToSend.carrera;
 			}
 
-			console.log('🚀 Creando usuario:', {
-				nombre: dataToSend.nombre,
-				apellido1: dataToSend.apellido1,
-				rol: dataToSend.rol,
-				correo: dataToSend.correo
-			});
-
 			const response = await api.post('Usuario/AddUsuario', dataToSend);
-
-			console.log('✅ Usuario creado exitosamente:', response.data);
 
 			onSuccess(`Usuario ${formData.nombre} ${formData.apellido1} creado exitosamente. Se envió código de verificación a ${formData.correo}. Al verificar su cuenta, recibirá una contraseña automática por correo.`);
 			handleClose();

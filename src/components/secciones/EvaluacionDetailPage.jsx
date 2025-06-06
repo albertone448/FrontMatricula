@@ -83,14 +83,6 @@ const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading, userR
                 total: notaNumber
             };
 
-            console.log('💾 Guardando nota para estudiante:', {
-                estudianteNombre: estudiante.nombreCompleto,
-                notaAnterior: estudiante.nota?.total,
-                notaNueva: notaNumber,
-                esNuevaNota: !estudiante.nota?.notaId || estudiante.nota.notaId === 0,
-                userRole: userRole
-            });
-
             const result = await onSaveNota(notaData);
             
             // Mostrar mensaje personalizado basado en si fue creación o actualización
@@ -100,13 +92,6 @@ const EstudianteNotaCard = ({ estudiante, evaluacion, onSaveNota, loading, userR
             
             setSuccessMessage(mensaje);
             setTimeout(() => setSuccessMessage(""), 3000);
-            
-            console.log('✅ Nota guardada exitosamente:', {
-                accion: result.isNew ? 'CREADA' : 'ACTUALIZADA',
-                notaId: result.notaId,
-                total: notaNumber,
-                byUser: userRole
-            });
             
         } catch (error) {
             console.error('❌ Error al guardar nota:', error);
@@ -266,20 +251,13 @@ const EvaluacionDetailPage = () => {
     // ✅ Verificar permisos - ACTUALIZADO para incluir administradores
     const canManageNotas = () => {
         if (userRole === "Administrador") {
-            console.log('✅ Administrador tiene acceso completo para gestionar notas');
             return true;
         }
         if (userRole === "Profesor" && seccion) {
             const userId = authUtils.getUserId();
             const hasAccess = seccion.usuarioId === userId;
-            console.log('🔍 Verificando acceso de profesor a notas:', { 
-                userId, 
-                seccionUserId: seccion.usuarioId, 
-                hasAccess 
-            });
             return hasAccess;
         }
-        console.log('❌ Sin permisos para gestionar notas:', { userRole });
         return false;
     };
 
@@ -289,18 +267,9 @@ const EvaluacionDetailPage = () => {
                 setLoading(true);
                 setError("");
 
-                console.log(`🔍 Cargando datos para sección ${seccionId}, evaluación ${evaluacionId}`);
-
                 // 1. Obtener información de la sección
                 const seccionData = await getSeccionById(parseInt(seccionId));
                 setSeccion(seccionData);
-
-                console.log('📄 Sección cargada:', {
-                    seccionId: seccionData.seccionId,
-                    profesorId: seccionData.usuarioId,
-                    profesorNombre: seccionData.profesorNombre,
-                    userRole: userRole
-                });
 
                 // 2. Obtener información de las evaluaciones de la sección
                 const evaluacionesData = await fetchEvaluaciones(parseInt(seccionId));
@@ -312,17 +281,9 @@ const EvaluacionDetailPage = () => {
                 }
                 setEvaluacion(evaluacionData);
 
-                console.log('🎯 Evaluación cargada:', {
-                    evaluacionId: evaluacionData.evaluacionId,
-                    tipoNombre: evaluacionData.tipoNombre,
-                    porcentaje: evaluacionData.porcentaje
-                });
-
                 // 3. Obtener estudiantes con sus notas
                 const estudiantesData = await fetchEstudiantesConNotas(parseInt(seccionId), parseInt(evaluacionId));
                 setEstudiantes(estudiantesData);
-
-                console.log('✅ Datos cargados exitosamente - Estudiantes:', estudiantesData.length);
 
             } catch (error) {
                 console.error("❌ Error al cargar datos:", error);
@@ -358,8 +319,6 @@ const EvaluacionDetailPage = () => {
     // ✅ Nueva función que maneja tanto crear como actualizar notas
     const handleSaveNota = async (notaData) => {
         try {
-            console.log('💾 Guardando nota en EvaluacionDetailPage:', notaData, 'por usuario:', userRole);
-            
             // Pasar seccionId y evaluacionId para poder refrescar después de crear
             const result = await saveNota(notaData, parseInt(seccionId), parseInt(evaluacionId));
             
@@ -381,8 +340,6 @@ const EvaluacionDetailPage = () => {
             const operacion = result.isNew ? "creada" : "actualizada";
             setSuccessMessage(`Nota ${operacion} exitosamente por ${userRole}`);
             setTimeout(() => setSuccessMessage(""), 3000);
-            
-            console.log('✅ Estado local actualizado con nota ID real:', result.notaId, 'por:', userRole);
             
             return result;
         } catch (error) {

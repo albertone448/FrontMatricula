@@ -156,7 +156,6 @@ const CreateSeccionModal = ({
     // Si hay una sección para editar, llenar el formulario
     useEffect(() => {
         if (seccionToEdit) {
-            console.log('Editing seccion:', seccionToEdit);
             setFormData({
                 seccionId: Number(seccionToEdit.seccionId) || 0,
                 usuarioId: String(seccionToEdit.usuarioId) || "",
@@ -168,7 +167,6 @@ const CreateSeccionModal = ({
                 cuposMax: String(seccionToEdit.cuposMax) || "",
             });
         } else {
-            console.log('Creating new seccion');
             // Resetear el formulario si no hay sección para editar
             setFormData({
                 seccionId: 0,
@@ -253,8 +251,6 @@ const CreateSeccionModal = ({
                 carrera: formData.carrera,
                 cuposMax: parseInt(formData.cuposMax)
             };
-
-            console.log('Datos a enviar:', seccionData);
 
             if (seccionToEdit) {
                 await updateSeccion(seccionData);

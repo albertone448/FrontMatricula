@@ -8,12 +8,12 @@ import { ConfirmRetirarModal } from "../components/inscripciones/ConfirmRetirarM
 import { VerDetallesModal } from "../components/inscripciones/VerDetallesModal";
 import { useInscripciones } from "../hooks/useInscripciones";
 import { useProfile } from "../hooks/useProfile";
-import api from "../services/apiConfig";
 import { CreditosSummary } from "../components/inscripciones/CreditosSummary";
 import { InscripcionesFilter } from "../components/inscripciones/InscripcionesFilter";
 import { SeccionesTable } from "../components/inscripciones/SeccionesTable";
 import { PeriodoSelector } from "../components/inscripciones/PeriodoSelector";
-import {RefreshCw, ShieldX, Home} from "lucide-react";
+import MiniHorarioInscripciones from "../components/inscripciones/MiniHorarioInscripciones"; // Added import
+import {X, ShieldX, Home} from "lucide-react";
 
 // ✅ NUEVA FUNCIÓN: Calcular el periodo actual basado en la fecha real
 const calcularPeriodoActual = () => {
@@ -81,18 +81,17 @@ const InscripcionesPage = () => {
                 if (periodos.length > 0) {
                     // ✅ NUEVA LÓGICA: Intentar seleccionar el periodo actual primero
                     const periodoActual = calcularPeriodoActual();
-                    console.log('📅 Periodo actual calculado:', periodoActual);
-                    console.log('📅 Periodos disponibles:', periodos);
+                    
                     
                     // Buscar si el periodo actual existe en los disponibles
                     const periodoEncontrado = periodos.find(p => p === periodoActual);
                     
                     let periodoASeleccionar;
                     if (periodoEncontrado) {
-                        console.log('✅ Periodo actual encontrado, seleccionando:', periodoEncontrado);
+                        
                         periodoASeleccionar = periodoEncontrado;
                     } else {
-                        console.log('⚠️ Periodo actual no encontrado, seleccionando el más reciente:', periodos[0]);
+                        
                         periodoASeleccionar = periodos[0]; // Fallback al más reciente
                     }
                     
@@ -218,6 +217,12 @@ const InscripcionesPage = () => {
         <div className='flex-1 overflow-auto relative z-10'>
             <Header title='Inscripciones' />
             <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                {/* Mini Horario de Inscripciones */}
+                <MiniHorarioInscripciones 
+                    seccionesInscritas={seccionesDisponibles.filter(s => s.inscrito)}
+                    loading={loading} 
+                />
+
                 {inscripcionParaRetiro && (
                     <ConfirmRetirarModal
                         open={modalRetirarOpen}
@@ -248,22 +253,19 @@ const InscripcionesPage = () => {
                         initial={{ opacity: 0, y: -20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
-                        className="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4 mb-6"
+                        className="bg-red-500 bg-opacity-10 border border-red-500 rounded-lg p-4 mb-6 flex items-center justify-between"
                     >
-                        <p className={`text-red-400 text-center ${handleRefresh ? 'mb-3' : ''}`}>{error}</p>
+                        <p className="text-red-400">{error}</p>
+                        {/* x para cerrar */}
                         {handleRefresh && (
-                            <div className="text-center">
-                                <label
-                                    onClick={handleRefresh}
-                                    className="px-4 py-2 text-sm hover:bg-opacity-40 text-red-200 hover:text-red-100 rounded-md transition-colors duration-150 cursor-pointer"
-                                >
-                                    <div className="flex items-center justify-center space-x-2">
-										<RefreshCw className="w-4 h-4" />
-										<span>Intentar de nuevo</span>
-									</div>
-                                </label>
-                            </div>
+                            <button
+                                onClick={handleRefresh}
+                                className="text-red-400 hover:text-red-600 transition duration-200 ml-4"
+                            >
+                                <X className="inline w-5 h-5" />
+                            </button>
                         )}
+
                     </motion.div>
                 )}
 

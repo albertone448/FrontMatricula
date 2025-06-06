@@ -283,17 +283,7 @@ const EditUserModal = ({ isOpen, onClose, onSuccess, userToEdit }) => {
 				correo: formData.correo
 			};
 
-			console.log('🔄 Actualizando usuario:', {
-				usuarioId: dataToSend.usuarioId,
-				nombre: dataToSend.nombre,
-				apellido1: dataToSend.apellido1,
-				rol: dataToSend.rol,
-				correo: dataToSend.correo
-			});
-
 			const response = await api.put('Usuario/UpdateUsuario', dataToSend);
-
-			console.log('✅ Usuario actualizado exitosamente:', response.data);
 
 			onSuccess(`Usuario ${formData.nombre} ${formData.apellido1} actualizado exitosamente.`);
 			handleClose();
