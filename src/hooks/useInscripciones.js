@@ -179,15 +179,31 @@ export const useInscripciones = () => {
             return false;
         }
 
-        // Verificar si ya tiene un curso en el mismo horario
-        const horarioConflicto = seccionesDisponibles.find(s => 
-            s.inscrito && 
-            s.horario?.dia === seccion.horario?.dia &&
-            s.horario?.horaInicio === seccion.horario?.horaInicio
-        );
+        // Helper function to convert HH:MM string to minutes since midnight
+        const timeToMinutes = (timeStr) => {
+            if (!timeStr || !timeStr.includes(':')) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        };
+
+        const nuevaHoraInicio = timeToMinutes(seccion.horario?.horaInicio);
+        const nuevaHoraFin = timeToMinutes(seccion.horario?.horaFin);
+        const nuevoDia = seccion.horario?.dia;
+
+        // Verificar si ya tiene un curso en el mismo horario (con solapamiento)
+        const horarioConflicto = seccionesDisponibles.find(s => {
+            if (!s.inscrito || !s.horario || s.horario.dia !== nuevoDia) {
+                return false;
+            }
+            const existenteHoraInicio = timeToMinutes(s.horario.horaInicio);
+            const existenteHoraFin = timeToMinutes(s.horario.horaFin);
+
+            // Verificar solapamiento: (StartA < EndB) and (EndA > StartB)
+            return nuevaHoraInicio < existenteHoraFin && nuevaHoraFin > existenteHoraInicio;
+        });
 
         if (horarioConflicto) {
-            setError(`Conflicto de horario con ${horarioConflicto.curso.nombre}`);
+            setError(`Conflicto de horario con ${horarioConflicto.curso.nombre} (${horarioConflicto.horario.dia} ${horarioConflicto.horario.horaInicio.slice(0,5)}-${horarioConflicto.horario.horaFin.slice(0,5)}).`);
             return false;
         }
 

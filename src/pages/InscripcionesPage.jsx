@@ -12,6 +12,7 @@ import { CreditosSummary } from "../components/inscripciones/CreditosSummary";
 import { InscripcionesFilter } from "../components/inscripciones/InscripcionesFilter";
 import { SeccionesTable } from "../components/inscripciones/SeccionesTable";
 import { PeriodoSelector } from "../components/inscripciones/PeriodoSelector";
+import MiniHorarioInscripciones from "../components/inscripciones/MiniHorarioInscripciones"; // Added import
 import {X, ShieldX, Home} from "lucide-react";
 
 // ✅ NUEVA FUNCIÓN: Calcular el periodo actual basado en la fecha real
@@ -216,6 +217,12 @@ const InscripcionesPage = () => {
         <div className='flex-1 overflow-auto relative z-10'>
             <Header title='Inscripciones' />
             <main className='max-w-7xl mx-auto py-6 px-4 lg:px-8'>
+                {/* Mini Horario de Inscripciones */}
+                <MiniHorarioInscripciones 
+                    seccionesInscritas={seccionesDisponibles.filter(s => s.inscrito)}
+                    loading={loading} 
+                />
+
                 {inscripcionParaRetiro && (
                     <ConfirmRetirarModal
                         open={modalRetirarOpen}
