@@ -5,8 +5,10 @@ import { useUserRole } from "../contexts/UserRoleContext";
 import Header from "../components/common/Header";
 import LoadingSpinner from "../components/horarios/LoadingSpinner";
 import { ConfirmRetirarModal } from "../components/inscripciones/ConfirmRetirarModal";
+import { VerDetallesModal } from "../components/inscripciones/VerDetallesModal";
 import { useInscripciones } from "../hooks/useInscripciones";
 import { useProfile } from "../hooks/useProfile";
+import api from "../services/apiConfig";
 import { CreditosSummary } from "../components/inscripciones/CreditosSummary";
 import { InscripcionesFilter } from "../components/inscripciones/InscripcionesFilter";
 import { SeccionesTable } from "../components/inscripciones/SeccionesTable";
@@ -21,6 +23,8 @@ const InscripcionesPage = () => {
     const [filterDia, setFilterDia] = useState("");
     const [filterHorario, setFilterHorario] = useState("");
 	const [filterCarrera, setFilterCarrera] = useState("");
+    const [modalDetallesOpen, setModalDetallesOpen] = useState(false);
+    const [seccionParaDetalles, setSeccionParaDetalles] = useState(null);
 
     const {
         loading,
@@ -44,6 +48,11 @@ const InscripcionesPage = () => {
         handlePeriodoChange,
         handleRefresh
     } = useInscripciones();
+
+    const handleVerDetalles = (seccion) => {
+        setSeccionParaDetalles(seccion);
+        setModalDetallesOpen(true);
+    };
 
     // Cargar datos cuando el componente se monte
     useEffect(() => {
@@ -192,6 +201,14 @@ const InscripcionesPage = () => {
                     />
                 )}
 
+                {seccionParaDetalles && (
+                    <VerDetallesModal
+                        open={modalDetallesOpen}
+                        onClose={() => setModalDetallesOpen(false)}
+                        seccion={seccionParaDetalles}
+                    />
+                )}
+
                 {loading && <LoadingSpinner message="Cargando secciones disponibles..." />}
                 
                 {error && (
@@ -264,6 +281,7 @@ const InscripcionesPage = () => {
                     loading={loading}
                     handleInscribirMateria={handleInscribirMateriaWrapper} // Use the wrapper function
                     handleRetirarMateria={handleRetirarMateria}
+                    handleVerDetalles={handleVerDetalles}
                 />
 
               
