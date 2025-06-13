@@ -55,11 +55,6 @@ const SeccionCard = ({ seccion, index }) => {
                 )}
             </div>
 
-            <div className="mt-3 pt-3 border-t border-gray-600">
-                <span className="text-xs text-gray-500">
-                    ID: {seccion.seccionId}
-                </span>
-            </div>
         </motion.div>
     );
 };
