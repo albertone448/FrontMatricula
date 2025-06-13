@@ -134,7 +134,7 @@ const HorarioGrid = ({ secciones = [] }) => {
 					<Clock className="w-6 h-6 mr-2 text-blue-400" />
 					Horario Semanal
 				</h2>
-				<p className="text-gray-400">Vista en cuadrícula de tus clases (incluye fines de semana)</p>
+				<p className="text-gray-400">Vista en cuadrícula de tus clases</p>
 			</div>
 
 			{/* Tabla de horarios */}
