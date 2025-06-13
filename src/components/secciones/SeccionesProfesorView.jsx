@@ -83,9 +83,6 @@ const SeccionCard = ({ seccion, onViewSeccion }) => {
                 <span className="px-3 py-1 bg-green-600 bg-opacity-20 border border-green-500 text-green-400 text-xs font-medium rounded-full">
                     Activa
                 </span>
-                <span className="ml-2 text-xs text-gray-500">
-                    ID: {seccion.seccionId}
-                </span>
             </div>
         </motion.div>
     );

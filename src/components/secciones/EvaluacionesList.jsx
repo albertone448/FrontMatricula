@@ -139,7 +139,6 @@ const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, onViewNotas, canM
 
             <div className="mt-4 pt-4 border-t border-gray-700">
                 <div className="flex justify-between items-center text-sm text-gray-400">
-                    <span>ID: {evaluacion.evaluacionId}</span>
                     <span>Sección: {evaluacion.seccionId}</span>
                 </div>
             </div>

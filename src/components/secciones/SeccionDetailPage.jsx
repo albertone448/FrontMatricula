@@ -484,7 +484,6 @@ const SeccionDetailPage = () => {
                                     <Calendar className="w-4 h-4 mr-1" />
                                     <span>Periodo {seccion?.periodo}</span>
                                     <span className="mx-2">•</span>
-                                    <span>ID: {seccion?.seccionId}</span>
                                     {userRole === "Administrador" && (
                                         <>
                                             <span className="mx-2">•</span>
