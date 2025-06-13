@@ -5,7 +5,9 @@ const horariosDisponibles = [
     "17:00 - 20:20"
 ];
 
-const carreras = ["Administración",
+const carreras = [
+        "Carrera Libre",
+        "Administración",
         "Administración con énfasis en Gestión Financiera",
         "Administración Educativa",
         "Antropología",
@@ -95,8 +97,7 @@ const carreras = ["Administración",
         "Trabajo Social",
         "Traducción Francés-Español",
         "Traducción Inglés-Español",
-        "Turismo",
-"carrera libre"]
+        "Turismo"]
 
 export const InscripcionesFilter = ({ 
     searchTerm, 

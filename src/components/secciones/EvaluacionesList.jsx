@@ -137,11 +137,6 @@ const EvaluacionCard = ({ evaluacion, index, onEdit, onDelete, onViewNotas, canM
                 </div>
             )}
 
-            <div className="mt-4 pt-4 border-t border-gray-700">
-                <div className="flex justify-between items-center text-sm text-gray-400">
-                    <span>Sección: {evaluacion.seccionId}</span>
-                </div>
-            </div>
             
             {/* Overlay para cerrar el menú cuando se hace clic fuera */}
             {showMenu && (

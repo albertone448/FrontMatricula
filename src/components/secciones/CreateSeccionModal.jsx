@@ -52,6 +52,7 @@ const CreateSeccionModal = ({
     ];
 
     const carrerasDisponibles = [
+        "Carrera Libre",
         "Administración",
         "Administración con énfasis en Gestión Financiera",
         "Administración Educativa",
@@ -142,7 +143,7 @@ const CreateSeccionModal = ({
         "Trabajo Social",
         "Traducción Francés-Español",
         "Traducción Inglés-Español",
-        "Turismo"
+        "Turismo"
     ];
 
     // Generar periodos disponibles desde 2024 hasta 2040
